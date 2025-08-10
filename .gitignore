@@ -1,0 +1,13 @@
+# cache
+__pycache__
+.ipynb_checkpoints
+
+# env and venv
+env
+venv
+.env
+
+# Remove data files
+*.xlsx
+*.pdf
+*.csv
