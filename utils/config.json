@@ -1,0 +1,94 @@
+{
+    "papà" : {
+        "headers" : {
+            "loc_identif" : "Data contabile",
+            "category"    : "Categoria",
+            "date"        : "Data valuta",
+            "descript"    : "Descrizione",
+            "value"       : "Importo"
+        },
+        "default_categories" : {
+            "Medici" : [
+                "dentistico",
+                "medical","daho","galeazzi"
+            ],
+            "Utenze" : [
+                "enel energia",
+                "addebito utenze",
+                "vodafone",
+                "segnoverde","sky"
+            ],
+            "Trasporti" : [
+                "lampugnano park",
+                "parking",
+                "parcheggio"
+            ],
+            "Estetica" : [
+                "hair", 
+                "parrucchiere",
+                "barbiere"],
+            "Cibo" : [
+                "carrefour",
+                "esselunga",
+                "coop",
+                "supermercato",
+                "caseificio",
+                "divina carni",
+                "take'"
+            ],
+            "Ristoranti/Viaggi" : [
+                "my way",
+                "longobar",
+                "laesse"
+            ],
+            "Assicurazioni Auto" : ["assicurazioni auto"],
+            "Assicurazioni Casa" : ["assicurazioni casa"],
+            "Altro / Vestiti" : [
+                "tabaccheria",
+                "tezenis",
+                "lego",
+                "giuliaenne",
+                "t & t store",
+                "kasanova",
+                "stradivarius",
+                "bershka",
+                "chatwin",
+                "karisma bijoux",
+                "pv1309",
+                "lavanderia",
+                "spirito sportivo"
+            ],
+            "Case" : [
+                "minoli ferramenta",
+                "bosin arredamenti",
+                "lineaemme",
+                "serim srl",
+                "evergreen di carrer",
+                "capparelli",
+                "comprensorio zona",
+                "condominio"
+            ],
+            "Marty/Teo" : [
+                "marty",
+                "teo"
+            ],
+            "Alfina" : [
+                "paglia alfia"
+            ],	 	 	 	 	 
+            "Straordinarie" : [
+                "imbalzano",
+                "fornero",
+                "mattioni",
+                "crosta",
+                "stefano cremonesi",
+                "arianna perri",
+                "maurizio parni"
+            ],
+            "Tasse" : [
+                "imposte e tasse",
+                "pagamento f24",
+                "pagamento i24"
+            ]
+        }
+    }
+}
