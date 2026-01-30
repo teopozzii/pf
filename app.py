@@ -1,33 +1,42 @@
-from utils import Movimenti
+from utils.bankstatement import BankStatement
+from utils.visualizations import cumulative_graph, category_graph
 from dash import Dash, html, dcc, Input, Output
-import pandas as pd
-import plotly.express as px
 
-movimenti = Movimenti()
-movimenti.categorize_movimenti()
+statement = BankStatement()
+statement.categorize_expenses()
 
 app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1("Analisi Movimenti Conto Corrente"),
     dcc.Dropdown(
+        id='visualization-dropdown',
+        options=[
+            {'label': 'Grafico Movimenti per Categoria', 'value': 'category-graph'},
+            {'label': 'Spesa Cumulata per Categoria', 'value': 'cumulative-graph'}
+        ],
+        value='category-graph'
+    ),
+    dcc.Dropdown(
         id='category-dropdown',
-        options=[{'label': cat, 'value': cat} for cat in movimenti.data['Categoria'].unique()],
-        value=movimenti.data['Categoria'].unique().tolist(),
+        options=[{'label': cat, 'value': cat} for cat in statement.data['Categoria'].unique()],
+        value=statement.data['Categoria'].unique().tolist(),
         multi=True
     ),
-    dcc.Graph(id='movimenti-graph')
+    dcc.Graph(id='statement-graph')
 ])
 
 @app.callback(
-    Output('movimenti-graph', 'figure'),
-    Input('category-dropdown', 'value')
+    Output('statement-graph', 'figure'),
+    Input('category-dropdown', 'value'),
+    Input('visualization-dropdown', 'value')
 )
-def update_graph(selected_categories):
-    filtered_data = movimenti.data[movimenti.data['Categoria'].isin(selected_categories)]
-    fig = px.histogram(filtered_data, x='Data contabile', y='Importo', color='Categoria',
-                       title='Movimenti per Categoria nel Tempo', nbins=50)
-    return fig
+def update_graph(selected_categories, visualization_type):
+    filtered_data = statement.data[statement.data['Categoria'].isin(selected_categories)]
+    filtered_data = filtered_data.sort_values('Data valuta')
+    if visualization_type == 'cumulative-graph':
+        return cumulative_graph(filtered_data)    
+    return category_graph(filtered_data)
 
 if __name__ == '__main__':
     app.run(debug=True)

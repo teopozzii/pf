@@ -1,33 +1,10 @@
 import os
-from IPython.core.magic import (Magics, magics_class, cell_magic)
-from IPython import get_ipython
-import psutil
 import pandas as pd
 import re
 from pathlib import Path
-from config import default_categories
+from .config import default_categories
 
-@magics_class
-class TrafficMagic(Magics):
-
-    @cell_magic
-    def nettraffic(self, line, cell):
-        net_io_start = psutil.net_io_counters()
-
-        exec(cell, globals())  # esegue il contenuto della cella
-
-        net_io_end = psutil.net_io_counters()
-        sent_diff = (net_io_end.bytes_sent - net_io_start.bytes_sent) / (1024 ** 2)
-        recv_diff = (net_io_end.bytes_recv - net_io_start.bytes_recv) / (1024 ** 2)
-
-        print(f"{sent_diff:.2f} MB inviati; {recv_diff:.2f} MB ricevuti.")
-
-def register_traffic_magic():
-    ip = get_ipython()
-    ip.register_magics(TrafficMagic)
-
-
-class Movimenti:
+class BankStatement:
     def __init__(self, categories=default_categories):
         os.system('cls' if os.name == 'nt' else 'clear')
         os.system('mkdir -p ~/code/conto/data')
@@ -35,7 +12,7 @@ class Movimenti:
         self.data = self.reset_table()
         self.categories = categories
 
-    def load_excel_movimenti(self):
+    def load_excel_statement(self):
         self.data = None
         name_pattern = r'MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
         files = []
@@ -50,7 +27,7 @@ class Movimenti:
         return df
 
     def reset_table(self, flag = "Data contabile"):
-        self.data = self.load_excel_movimenti()
+        self.data = self.load_excel_statement()
         col_header_limit, row_header_limit = 10, 10
     
         headers_area = self.data.iloc[:col_header_limit, :row_header_limit]
@@ -64,9 +41,11 @@ class Movimenti:
             row_headers_index + 1:,
             col_headers_index:
             ].reset_index(drop=True)
+        self.data["Data valuta"] = pd.to_datetime(self.data["Data valuta"], format="%d/%m/%Y")
+        self.data["Importo"] = pd.to_numeric(self.data["Importo"].astype(str).str.replace(',', '.'), errors='coerce')
         return self.data
 
-    def categorize_movimenti(self, col_name='Descrizione'):
+    def categorize_expenses(self, col_name='Descrizione'):
         if col_name not in self.data.columns:
             raise ValueError(f"'{col_name}' column not found in data.")
     
