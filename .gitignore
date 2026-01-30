@@ -1,6 +1,7 @@
 # cache
 __pycache__
 .ipynb_checkpoints
+.DS_Store
 
 # env and venv
 env
@@ -8,6 +9,7 @@ venv
 .env
 
 # Remove data files
+data
 *.xlsx
 *.pdf
 *.csv

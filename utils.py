@@ -1,6 +1,10 @@
+import os
 from IPython.core.magic import (Magics, magics_class, cell_magic)
 from IPython import get_ipython
 import psutil
+import pandas as pd
+import re
+from pathlib import Path
 
 @magics_class
 class TrafficMagic(Magics):
@@ -20,3 +24,24 @@ class TrafficMagic(Magics):
 def register_traffic_magic():
     ip = get_ipython()
     ip.register_magics(TrafficMagic)
+
+
+class Movimenti:
+    def __init__(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        os.system('mkdir -p ~/code/conto/data')
+        self.data_dir = Path("~/code/conto/data").expanduser()
+        self.data = self.load_excel_movimenti()
+
+    def load_excel_movimenti(self):
+        name_pattern = r'MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
+        files = []
+        for file in self.data_dir.iterdir():
+            if re.match(name_pattern, file.name):
+                files.append(str(file.resolve()))
+        files.sort()
+        if not files:
+            print("No matching Excel files found.")
+            return None
+        df = pd.read_excel(files[0], header=None)
+        return df
