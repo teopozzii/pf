@@ -1,4 +1,5 @@
 **TODO items**
+- [ ] Add owner extension (bottom/top of sidebar?)
 - [ ] Home page
     - [X] Drag and drop space for file upload.
         - [X] Initialize the data store to empty
@@ -10,5 +11,4 @@
     - [ ] Insert new keywords into categories list and update config.json
         - [ ] New page: review uncategorized items
 - [X] Separate graph pages
-- [ ] Wrap app in executable
-- [ ] ADD OWNER EXTENSION
+- [X] Wrap app in executable
