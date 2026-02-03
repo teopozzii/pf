@@ -29,8 +29,8 @@ class BankStatement:
     def _update_logger(self, message):
         logger.info(message)
 
-    def load_default_statement(self):
-        name_pattern = r'MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
+    def load_last_available_statement(self):
+        name_pattern = r'categorized_MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
             if re.match(name_pattern, file.name):
@@ -39,14 +39,13 @@ class BankStatement:
         if not files:
             print("No matching Excel files found.")
             return None
-        df = pd.read_excel(files[0], header=None)
+        df = pd.read_excel(files[0])
         return df
 
     def process_statement(self, data=None):
         if data is not None:
             self.data = data
-        elif self.data is None:
-            self.data = self.load_default_statement()
+        elif self.data is None: return None
         flag = self.headers["loc_identif"]
         col_header_limit, row_header_limit = 10, 10
     
