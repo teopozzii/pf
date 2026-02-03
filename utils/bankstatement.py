@@ -40,6 +40,13 @@ class BankStatement:
         if not files:
             print("No matching Excel files found.")
             return None
+        # Remove files older than the past 3 ones
+        for old_file in files[3:]:
+            try:
+                os.remove(old_file)
+                logger.info(f"Removed old file: {old_file}")
+            except Exception as e:
+                logger.warning(f"Failed to remove old file {old_file}: {e}")
         df = pd.read_excel(files[0])
         time_of_saving = files[0].split('_')[1] + " " + files[0].split('_')[2]
         self._update_logger(f"Loaded last available statement from {files[0]} saved at {time_of_saving}.")
