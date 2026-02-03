@@ -22,7 +22,7 @@ sidebar = html.Div([
 ], style=SIDEBAR_STYLE)
 
 app.layout = dbc.Container([
-    dcc.Store(id='app-state', storage_type='session', data=[]),
+    dcc.Store(id='app-state', storage_type='session', data=None),
     html.Div(
         children=[
             dcc.Location(id="url"),

@@ -11,19 +11,18 @@ logger = logging.getLogger(__name__)
 
 class BankStatement:
     def __init__(self, owner="papà", categories=None):
-        os.system('cls' if os.name == 'nt' else 'clear')
+        # os.system('cls' if os.name == 'nt' else 'clear')
         os.system('mkdir -p ~/code/conto/data')
         self.data_dir = Path("~/code/conto/data").expanduser()
         self.headers = config[owner]["headers"]
-        self.data = self.read_data()
+        self.data = None
         self.categories = categories if categories else config[owner]["default_categories"]
         self._update_logger("BankStatement initialized.")
 
     def _update_logger(self, message):
         logger.info(message)
 
-    def load_excel_statement(self):
-        self.data = None
+    def load_default_statement(self):
         name_pattern = r'MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
@@ -36,8 +35,11 @@ class BankStatement:
         df = pd.read_excel(files[0], header=None)
         return df
 
-    def read_data(self):
-        self.data = self.load_excel_statement()
+    def process_statement(self, data=None):
+        if data is not None:
+            self.data = data
+        elif self.data is None:
+            self.data = self.load_default_statement()
         flag = self.headers["loc_identif"]
         col_header_limit, row_header_limit = 10, 10
     
@@ -75,12 +77,3 @@ class BankStatement:
         output_path = self.data_dir / filename
         self.data.to_excel(output_path, index=False)
         self._update_logger(f"{self.__class__.__name__} data written to {output_path}")
-
-
-# Utility used in app callbacks:
-def _load_statement_data_from_dict(statement_data):
-    statement_data = pd.DataFrame(statement_data)
-    # Reload the data only if needed
-    if statement_data.empty:
-        statement_data = BankStatement().categorize_expenses()
-    return statement_data
