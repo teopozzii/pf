@@ -2,9 +2,12 @@ import os
 import pandas as pd
 import re
 from pathlib import Path
+import logging
 import json
 with open(Path("~/code/conto/utils/config.json").expanduser(), 'r') as f:
     config = json.load(f)
+
+logger = logging.getLogger(__name__)
 
 class BankStatement:
     def __init__(self, owner="papà", categories=None):
@@ -12,8 +15,12 @@ class BankStatement:
         os.system('mkdir -p ~/code/conto/data')
         self.data_dir = Path("~/code/conto/data").expanduser()
         self.headers = config[owner]["headers"]
-        self.data = self.reset_table()
+        self.data = self.read_data()
         self.categories = categories if categories else config[owner]["default_categories"]
+        self._update_logger("BankStatement initialized.")
+
+    def _update_logger(self, message):
+        logger.info(message)
 
     def load_excel_statement(self):
         self.data = None
@@ -29,7 +36,7 @@ class BankStatement:
         df = pd.read_excel(files[0], header=None)
         return df
 
-    def reset_table(self):
+    def read_data(self):
         self.data = self.load_excel_statement()
         flag = self.headers["loc_identif"]
         col_header_limit, row_header_limit = 10, 10
@@ -63,3 +70,8 @@ class BankStatement:
         
         self.data[category_col] = self.data[description_col].apply(categorize_row)
         return self.data
+    
+    def write_data(self, filename="categorized_statement.xlsx"):
+        output_path = self.data_dir / filename
+        self.data.to_excel(output_path, index=False)
+        self._update_logger(f"{self.__class__.__name__} data written to {output_path}")

@@ -1,42 +1,45 @@
-from utils.bankstatement import BankStatement
-from utils.visualizations import cumulative_graph, category_graph
-from dash import Dash, html, dcc, Input, Output
+from dash import dash, Dash, html, dcc, Input, Output, page_registry
+import dash_bootstrap_components as dbc
+import json
 
-statement = BankStatement()
-statement.categorize_expenses()
+SIDEBAR_STYLE = json.load(open("utils/sidebar_style.json"))
 
-app = Dash(__name__)
+app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-app.layout = html.Div([
-    html.H1("Analisi Movimenti Conto Corrente"),
-    dcc.Dropdown(
-        id='visualization-dropdown',
-        options=[
-            {'label': 'Grafico Movimenti per Categoria', 'value': 'category-graph'},
-            {'label': 'Spesa Cumulata per Categoria', 'value': 'cumulative-graph'}
-        ],
-        value='category-graph'
-    ),
-    dcc.Dropdown(
-        id='category-dropdown',
-        options=[{'label': cat, 'value': cat} for cat in statement.data['Categoria'].unique()],
-        value=statement.data['Categoria'].unique().tolist(),
-        multi=True
-    ),
-    dcc.Graph(id='statement-graph')
-])
-
-@app.callback(
-    Output('statement-graph', 'figure'),
-    Input('category-dropdown', 'value'),
-    Input('visualization-dropdown', 'value')
+sidebar = html.Div(
+    [
+        html.H2("Pagina"),
+        html.Hr(),
+        html.P("Seleziona la visualizzazione desiderata."),
+        dbc.Nav(
+            [
+                dbc.NavLink(page["name"], href=page["path"], active="exact")
+                for page in page_registry.values()
+                if page["module"] != "pages.not_found_404"
+            ],
+            vertical=True,
+            pills=True,
+        )
+    ],
+    style=SIDEBAR_STYLE
 )
-def update_graph(selected_categories, visualization_type):
-    filtered_data = statement.data[statement.data['Categoria'].isin(selected_categories)]
-    filtered_data = filtered_data.sort_values('Data valuta')
-    if visualization_type == 'cumulative-graph':
-        return cumulative_graph(filtered_data)    
-    return category_graph(filtered_data)
+
+app.layout = dbc.Container([
+    dcc.Store(id='app-state', storage_type='session', data=[]),
+    html.Div(
+        children=[
+            dcc.Location(id="url"),
+            sidebar,
+            html.Div(dash.page_container, style={"margin-left": SIDEBAR_STYLE["width"]}),  # ← Push content right
+        ],
+        style={
+            "display": "flex",
+            "flexDirection": "row",   # this is the HBox part
+            "gap": "10px",            # spacing between items
+            "alignItems": "center"    # vertical alignment
+        }
+    )
+], fluid=True)
 
 if __name__ == '__main__':
     app.run(debug=True)
