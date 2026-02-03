@@ -8,6 +8,9 @@ env
 venv
 .env
 
+# Work notebooks
+*.ipynb
+
 # Remove data files
 data
 *.xlsx
