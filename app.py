@@ -20,7 +20,7 @@ SIDEBAR_STYLE = json.load(open(resource_path("utils/sidebar_style.json")))
 app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 sidebar = html.Div([
-    html.H2("Pagina"),
+    html.H2("Analisi spese", className="display-8"),
     html.Hr(),
     html.P("Seleziona la visualizzazione desiderata."),
     dbc.Nav(
@@ -36,8 +36,10 @@ sidebar = html.Div([
 
 app.layout = dbc.Container([
     dcc.Store(id='app-state', storage_type='session', data=None),
+    dcc.Download(id="download-excel"),
     dcc.Download(id="download-excel-preview"),
-    html.Button("Download data", id="download-btn-preview", style={"display": "none"}),  # Hidden
+    html.Button("Download visible rows", id="download-btn-preview", style={"display": "none"}),  # Hidden
+    html.Button("Download all data", id="download-btn", style={"display": "none"}),  # Hidden
     html.Div(
         dash_table.DataTable(id='preview-table'),
         style={"display": "none"},

@@ -1,17 +1,20 @@
 from dash import html, register_page, callback, Input, Output, State, dcc, dash_table
+import dash_bootstrap_components as dbc
 import pandas as pd
 import logging
+import warnings
 import base64
 import io
 from utils.bankstatement import BankStatement
 
 logger = logging.getLogger(__name__)
 
-register_page(__name__, path="/")  # Root path
+register_page(__name__, path="/", name= "Home - tabella")  # Root path
 
 layout = html.Div([
     dcc.Store(id="data-upload-timestamp", storage_type='session', data=None),
-    html.H1("Benvenuto!"),
+    html.Div(style={"height": "20px"}),
+    html.H3("Caricamento dati:"),
 
     # Drag-and-drop upload component
     dcc.Upload(
@@ -118,7 +121,10 @@ def render_preview(data):
                     try:
                         sample = [row.get(k) for row in records if row.get(k) is not None]
                         if sample:
-                            parsed = pd.to_datetime(sample, errors='coerce')
+                            # Suppress pandas warning when formats are inconsistent; we just detect if parsing yields datetimes
+                            with warnings.catch_warnings():
+                                warnings.filterwarnings("ignore", message="Could not infer format")
+                                parsed = pd.to_datetime(sample, errors='coerce', infer_datetime_format=True)
                             if parsed.notna().sum() > 0:
                                 col_type = 'datetime'
                     except Exception:
@@ -142,10 +148,28 @@ def render_preview(data):
             html.H4("Anteprima dati"),
             table,
             html.Div(f"Mostrate {min(len(records), 100)} righe.", style={"marginTop": "8px", "fontSize": "12px", "color": "#666"}),
-            html.Div([
-                html.Button("Download visible rows", id="download-btn-preview", style={"marginRight": "10px"}),
-                dcc.Download(id="download-excel-preview")
-            ], style={"marginTop": "20px"})
+            dbc.Row([
+                dbc.Col(
+                    html.Button(
+                        "Download visible rows",   
+                        id="download-btn-preview",
+                        style={"width": "100%"}
+                    ),
+                    width=6
+                ),
+                dbc.Col(
+                    html.Button(
+                        "Download all data", 
+                        id="download-btn", 
+                        style={"width": "100%"}  # Force button to fill column
+                    ),
+                    width=6  # Half width
+                ),
+                # Keep dcc.Download components anywhere (they are invisible)
+                dcc.Download(id="download-excel-preview"),
+                dcc.Download(id="download-excel")
+            ], style={"marginTop": "20px"}),
+            html.Hr()
         ])
 
     except Exception as e:
@@ -163,9 +187,38 @@ def download_excel_preview(n_clicks, derived_data):
     if not n_clicks:
         return None
     df = pd.DataFrame(derived_data if derived_data is not None else [])
+
+    # Try to coerce datetime-like columns into real datetimes for a better Excel export.
+    # Suppress the pandas 'Could not infer format' warning during detection/parsing.
+    try:
+        for col in df.select_dtypes(include=['object']).columns:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="Could not infer format")
+                parsed = pd.to_datetime(df[col], errors='coerce', infer_datetime_format=True)
+            if parsed.notna().sum() > 0:
+                df[col] = parsed
+    except Exception:
+        logger.exception("Failed to coerce datetime columns for export; proceeding without coercion.")
+
     return dcc.send_data_frame(
         df.to_excel,
         "statement_data_filtered.xlsx",
+        sheet_name="Movimenti",
+        index=False
+    )
+
+@callback(
+    Output("download-excel", "data"),
+    Input("download-btn", "n_clicks"),
+    State('app-state', 'data'),
+    prevent_initial_call=True
+)
+def download_excel(n_clicks, data):
+    if not n_clicks: return None
+    df = pd.DataFrame(data) # Convert list of dicts back to DataFrame
+    return dcc.send_data_frame(
+        df.to_excel,
+        "statement_data.xlsx",
         sheet_name="Movimenti",
         index=False
     )
