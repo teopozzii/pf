@@ -30,7 +30,7 @@ class BankStatement:
         logger.info(message)
 
     def load_last_available_statement(self):
-        name_pattern = r'categorized_MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
+        name_pattern = r'categorized_\d{8}_\d{6}_MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
             if re.match(name_pattern, file.name):
@@ -40,7 +40,12 @@ class BankStatement:
             print("No matching Excel files found.")
             return None
         df = pd.read_excel(files[0])
-        return df
+        time_of_saving = files[0].split('_')[1] + " " + files[0].split('_')[2]
+        self._update_logger(f"Loaded last available statement from {files[0]} saved at {time_of_saving}.")
+        return {
+            "data" : df,
+            "time_saved" : time_of_saving
+        }
 
     def process_statement(self, data=None):
         if data is not None:

@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 register_page(__name__, path="/", name= "Home - tabella")  # Root path
 
+preview_limit = 100  # Max number of rows to show in preview
+
 layout = html.Div([
     dcc.Store(id="data-upload-timestamp", storage_type='session', data=None),
     html.Div(style={"height": "20px"}),
@@ -63,13 +65,15 @@ def handle_upload(contents, filename, existing_data, timestamp):
         logger.info("Existing data in app-state, preserving it across uploads.")
         return f"Dati caricati in sessione {timestamp} preservati.", existing_data, timestamp
     if not (contents or existing_data):
-        df = BankStatement().load_last_available_statement()
+        last = BankStatement().load_last_available_statement() # tuple: dataframe and timestamp of saving
+        df = last["data"]
         if df is None:
                 return "Carica i tuoi estratti conto per iniziare a monitorare le tue spese.", None, timestamp
         records = df.to_dict(orient="records")
         logger.info("Loaded default statement with %d records.", len(records))
-        return f"Ultimi dati presenti caricati.", records, timestamp
+        return f"Mostrando i dati caricati in sessione {last['time_saved']}.", records, last["time_saved"]
 
+    # Logic for when data is directly uploaded
     try:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -93,7 +97,7 @@ def handle_upload(contents, filename, existing_data, timestamp):
         if records:
             st = BankStatement()
             st.data = pd.DataFrame.from_records(records)
-            st.write_data(filename="categorized_" + filename)
+            st.write_data(filename=f"categorized_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}_{filename}.xlsx")
             updated_timestamp = pd.Timestamp.now().isoformat()
             return f"✅ File '{filename}' caricato con successo! (righe: {len(records)})", records, updated_timestamp
         else:
@@ -115,7 +119,7 @@ def render_preview(data):
 
     try:
         # Use raw records from app-state (limit to 100 rows)
-        records = data[:100]
+        records = data[:preview_limit]
 
         # Build columns with basic type detection
         cols = []
