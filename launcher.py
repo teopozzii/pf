@@ -1,5 +1,4 @@
 import webbrowser
-import threading
 import time
 import subprocess
 import sys
