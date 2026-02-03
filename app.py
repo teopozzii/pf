@@ -1,8 +1,21 @@
 from dash import dash, Dash, html, dcc, page_registry
 import dash_bootstrap_components as dbc
 import json
+import os, sys
 
-SIDEBAR_STYLE = json.load(open("utils/sidebar_style.json"))
+# Helper to find resources
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, relative_path)
+
+
+SIDEBAR_STYLE = json.load(open(resource_path("utils/sidebar_style.json")))
 
 app = Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
