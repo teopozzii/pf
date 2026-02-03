@@ -21,6 +21,7 @@ class BankStatement:
         self.data_dir = base_dir / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
+        self.owner = owner
         self.headers = config[owner]["headers"]
         self.data = None
         self.categories = categories if categories else config[owner]["default_categories"]
@@ -30,12 +31,12 @@ class BankStatement:
         logger.info(message)
 
     def load_last_available_statement(self):
-        name_pattern = r'categorized_\d{8}_\d{6}_MovimentiCC_\d{4}-\d{2}-\d{2}\.xlsx'
+        name_pattern = r'categorized_\d{8}_\d{6}_' + config[self.owner]["sourcedoc_namepattern"] + r'\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
             if re.match(name_pattern, file.name):
                 files.append(str(file.resolve()))
-        files.sort()
+        files.sort(reverse=True)
         if not files:
             print("No matching Excel files found.")
             return None
