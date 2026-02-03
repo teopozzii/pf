@@ -1,23 +1,32 @@
-import webbrowser
+import threading
 import time
-import subprocess
+import webbrowser
 import sys
-import os
+from app import app  # Import your dash app object directly
 
-if getattr(sys, 'frozen', False):
-    # Running as .exe - use bundled assets
-    application_path = os.path.dirname(sys.executable)
-else:
-    application_path = os.path.dirname(os.path.abspath(__file__))
+def run_server():
+    # Run the dash app (this blocks)
+    app.run(debug=False, port=8050)
 
-# Start your Dash app in a subprocess
-proc = subprocess.Popen([sys.executable, "app.py"])
+if __name__ == '__main__':
+    # Required for PyInstaller (especially on Windows/Mac)
+    import multiprocessing
+    multiprocessing.freeze_support()
 
-# Wait 3 seconds for server to start
-time.sleep(3)
+    # Start Dash in a separate thread
+    t = threading.Thread(target=run_server)
+    t.daemon = True
+    t.start()
 
-# Open browser to localhost:8050
-webbrowser.open('http://127.0.0.1:8050')
+    # Wait for server to boot
+    time.sleep(3)
 
-# Keep launcher alive
-proc.wait()
+    # Open browser
+    webbrowser.open('http://127.0.0.1:8050')
+
+    # Keep main thread alive
+    while t.is_alive():
+        try:
+            t.join(1)
+        except KeyboardInterrupt:
+            sys.exit()
