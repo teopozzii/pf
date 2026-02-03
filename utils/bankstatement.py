@@ -1,19 +1,26 @@
 import os
+import sys
 import pandas as pd
 import re
 from pathlib import Path
 import logging
 import json
-with open(Path("~/code/conto/utils/config.json").expanduser(), 'r') as f:
+
+from utils.paths import resource_path
+
+with open(Path(resource_path("utils/config.json")), 'r') as f:
     config = json.load(f)
 
 logger = logging.getLogger(__name__)
 
 class BankStatement:
     def __init__(self, owner="papà", categories=None):
-        # os.system('cls' if os.name == 'nt' else 'clear')
-        os.system('mkdir -p ~/code/conto/data')
-        self.data_dir = Path("~/code/conto/data").expanduser()
+        base_dir = Path.home() / ".bankstatementapp"
+        if sys.platform == "win32":
+            base_dir = Path(os.getenv('APPDATA')) / "BankStatementApp"
+        self.data_dir = base_dir / "data"
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+
         self.headers = config[owner]["headers"]
         self.data = None
         self.categories = categories if categories else config[owner]["default_categories"]

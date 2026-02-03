@@ -1,5 +1,6 @@
 **TODO items**
 - [ ] Add owner extension (bottom/top of sidebar?)
+- [ ] Use BankStatement.data_dir to store data across sessions, replace default data load
 - [ ] Home page
     - [X] Drag and drop space for file upload.
         - [X] Initialize the data store to empty
