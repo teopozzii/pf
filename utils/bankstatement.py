@@ -75,3 +75,12 @@ class BankStatement:
         output_path = self.data_dir / filename
         self.data.to_excel(output_path, index=False)
         self._update_logger(f"{self.__class__.__name__} data written to {output_path}")
+
+
+# Utility used in app callbacks:
+def _load_statement_data_from_dict(statement_data):
+    statement_data = pd.DataFrame(statement_data)
+    # Reload the data only if needed
+    if statement_data.empty:
+        statement_data = BankStatement().categorize_expenses()
+    return statement_data

@@ -1,0 +1,12 @@
+**TODO items**
+- [ ] Home page
+    - [ ] Drag and drop space for file upload.
+        - [ ] Initialize the data store to empty
+        - [ ] define a unique callback with it as output
+        - [ ] Callback takes input from the drag-drop.
+        - [ ] If no data has been loaded yet:
+            - [ ] default to reading worksheet for now
+            - [ ] redirect to file upload, eventually.
+    - [ ] Button to download updated data
+- [X] Separate graph pages
+- [ ] Wrap app in executable
