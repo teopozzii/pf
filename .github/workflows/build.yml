@@ -1,0 +1,18 @@
+name: Build Windows Exe
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install pyinstaller dash[pages] dash-bootstrap-components pandas openpyxl plotly
+      - run: pyinstaller launcher.py --onefile --windowed --name BankStatementApp --add-data "assets;assets" --add-data "pages;pages" --add-data "utils;utils" --hidden-import dash_pages --hidden-import dash_bootstrap_components --hidden-import plotly.io._renderers
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BankStatementApp
+          path: dist/BankStatementApp.exe
