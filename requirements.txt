@@ -5,5 +5,4 @@ dash
 dash[pages]
 dash-bootstrap-components
 pyinstaller
-auto-py-to-exe
 openpyxl
