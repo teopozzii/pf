@@ -5,9 +5,10 @@
         - [X] define a unique callback with it as output
         - [X] Callback takes input from the drag-drop.
         - [X] If no data has been loaded yet: nothing happens
-    - [ ] Button to download updated data
+    - [X] Button to download updated data
     - [ ] Render pivot of dataframe
     - [ ] Insert new keywords into categories list and update config.json
+        - [ ] New page: review uncategorized items
 - [X] Separate graph pages
 - [ ] Wrap app in executable
 - [ ] ADD OWNER EXTENSION

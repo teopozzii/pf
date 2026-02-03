@@ -121,9 +121,30 @@ def render_preview(data):
         return html.Div([
             html.H4("Anteprima dati"),
             table,
-            html.Div(f"Mostrate {len(rows)} righe." , style={"marginTop": "8px", "fontSize": "12px", "color": "#666"})
+            html.Div(f"Mostrate {len(rows)} righe." , style={"marginTop": "8px", "fontSize": "12px", "color": "#666"}),
+            html.Div([
+                html.Button("Download data", id="download-btn", style={"marginRight": "10px"}),
+                dcc.Download(id="download-excel")
+            ], style={"marginTop": "20px"})
         ])
 
     except Exception as e:
         logger.exception("Error while rendering preview: %s", e)
         return html.Div(f"Errore nel render della preview: {e}")
+
+
+@callback(
+    Output("download-excel", "data"),
+    Input("download-btn", "n_clicks"),
+    State('app-state', 'data'),
+    prevent_initial_call=True
+)
+def download_excel(n_clicks, data):
+    if not n_clicks: return None
+    df = pd.DataFrame(data) # Convert list of dicts back to DataFrame
+    return dcc.send_data_frame(
+        df.to_excel,
+        "statement_data.xlsx",
+        sheet_name="Movimenti",
+        index=False
+    )

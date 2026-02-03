@@ -23,6 +23,8 @@ sidebar = html.Div([
 
 app.layout = dbc.Container([
     dcc.Store(id='app-state', storage_type='session', data=None),
+    dcc.Download(id="download-excel"),
+    html.Button("Download data", id="download-btn", style={"display": "none"}),  # Hidden
     html.Div(
         children=[
             dcc.Location(id="url"),
