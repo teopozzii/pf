@@ -1,4 +1,4 @@
-from dash import dash, Dash, html, dcc, page_registry
+from dash import dash, Dash, html, dcc, dash_table, page_registry
 import dash_bootstrap_components as dbc
 import json
 import os, sys
@@ -36,8 +36,12 @@ sidebar = html.Div([
 
 app.layout = dbc.Container([
     dcc.Store(id='app-state', storage_type='session', data=None),
-    dcc.Download(id="download-excel"),
-    html.Button("Download data", id="download-btn", style={"display": "none"}),  # Hidden
+    dcc.Download(id="download-excel-preview"),
+    html.Button("Download data", id="download-btn-preview", style={"display": "none"}),  # Hidden
+    html.Div(
+        dash_table.DataTable(id='preview-table'),
+        style={"display": "none"},
+    ),
     html.Div(
         children=[
             dcc.Location(id="url"),

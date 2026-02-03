@@ -1,4 +1,4 @@
-from dash import html, register_page, callback, Input, Output, State, dcc
+from dash import html, register_page, callback, Input, Output, State, dcc, dash_table
 import pandas as pd
 import logging
 import base64
@@ -98,33 +98,53 @@ def handle_upload(contents, filename, existing_data, timestamp):
     Input('app-state', 'data')
 )
 def render_preview(data):
-    """Render a small HTML table showing up to 10 rows from the stored app-state data."""
+    """Render a DataTable showing up to 100 rows from the stored app-state data."""
     if not data:
         return html.Div("Nessuna anteprima disponibile.")
 
-    # data is expected to be a list of dicts
     try:
-        rows = data[:10]
-        # determine columns from first row
-        cols = list(rows[0].keys()) if rows else []
+        # Use raw records from app-state (limit to 100 rows)
+        records = data[:100]
 
-        header = html.Tr([html.Th(c) for c in cols])
-        body = []
-        for r in rows:
-            body.append(html.Tr([html.Td(str(r.get(c, ''))) for c in cols]))
+        # Build columns with basic type detection
+        cols = []
+        if records:
+            first = records[0]
+            for k, v in first.items():
+                col_type = 'text'
+                if isinstance(v, (int, float)):
+                    col_type = 'numeric'
+                else:
+                    try:
+                        sample = [row.get(k) for row in records if row.get(k) is not None]
+                        if sample:
+                            parsed = pd.to_datetime(sample, errors='coerce')
+                            if parsed.notna().sum() > 0:
+                                col_type = 'datetime'
+                    except Exception:
+                        pass
+                cols.append({'name': k, 'id': k, 'type': col_type})
 
-        table = html.Table([
-            html.Thead(header),
-            html.Tbody(body)
-        ], style={"width": "100%", "border": "1px solid #ccc", "borderCollapse": "collapse"})
+        table = dash_table.DataTable(
+            id='preview-table',
+            columns=cols,
+            data=records,
+            page_action='native',
+            page_size=10,
+            sort_action='native',
+            filter_action='native',
+            style_table={'overflowX': 'auto'},
+            style_cell={'textAlign': 'left', 'whiteSpace': 'normal', 'height': 'auto'},
+            style_header={'background': '#f9f9f9', 'fontWeight': 'bold'}
+        )
 
         return html.Div([
             html.H4("Anteprima dati"),
             table,
-            html.Div(f"Mostrate {len(rows)} righe." , style={"marginTop": "8px", "fontSize": "12px", "color": "#666"}),
+            html.Div(f"Mostrate {min(len(records), 100)} righe.", style={"marginTop": "8px", "fontSize": "12px", "color": "#666"}),
             html.Div([
-                html.Button("Download data", id="download-btn", style={"marginRight": "10px"}),
-                dcc.Download(id="download-excel")
+                html.Button("Download visible rows", id="download-btn-preview", style={"marginRight": "10px"}),
+                dcc.Download(id="download-excel-preview")
             ], style={"marginTop": "20px"})
         ])
 
@@ -134,17 +154,18 @@ def render_preview(data):
 
 
 @callback(
-    Output("download-excel", "data"),
-    Input("download-btn", "n_clicks"),
-    State('app-state', 'data'),
+    Output("download-excel-preview", "data"),
+    Input("download-btn-preview", "n_clicks"),
+    State('preview-table', 'derived_virtual_data'),
     prevent_initial_call=True
 )
-def download_excel(n_clicks, data):
-    if not n_clicks: return None
-    df = pd.DataFrame(data) # Convert list of dicts back to DataFrame
+def download_excel_preview(n_clicks, derived_data):
+    if not n_clicks:
+        return None
+    df = pd.DataFrame(derived_data if derived_data is not None else [])
     return dcc.send_data_frame(
         df.to_excel,
-        "statement_data.xlsx",
+        "statement_data_filtered.xlsx",
         sheet_name="Movimenti",
         index=False
     )
