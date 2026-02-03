@@ -17,7 +17,11 @@ layout = html.Div([
     dcc.Upload(
         id='upload-data',
         children=html.Div([
-            'Trascina qui il file o ', html.A('clicca per selezionare')
+            html.Img(
+                src="/assets/upload_icon.png",
+                style={'width': '24px', 'height': '24px', 'verticalAlign': 'middle', 'marginRight': '8px'}
+            ),
+            'Trascina qui il file o ', html.A('clicca per selezionare', style={'color': 'blue'})
         ]),
         style={
             'width': '100%',
