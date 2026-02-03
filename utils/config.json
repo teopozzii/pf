@@ -6,6 +6,7 @@
             "category"    : "Categoria",
             "date"        : "Data valuta",
             "descript"    : "Descrizione",
+            "detail"      : "Dettaglio",
             "value"       : "Importo"
         },
         "default_categories" : {
@@ -89,6 +90,23 @@
                 "imposte e tasse",
                 "pagamento f24",
                 "pagamento i24"
+            ]
+        }
+    },
+    "teo" : {
+        "sourcedoc_namepattern" : "movements_\\d{4}\\d{2}\\d{2}",
+        "headers" : {
+            "loc_identif" : "Data",
+            "category"    : "Categoria",
+            "date"        : "Data",
+            "descript"    : "Descrizione_Completa",
+            "detail"      : "Dettaglio",
+            "value"       : "Uscite"
+        },
+        "default_categories" : {
+            "Medici" : [
+                "dentistico",
+                "medical","daho","galeazzi"
             ]
         }
     }

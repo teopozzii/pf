@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 import json
 from utils.paths import resource_path
 
+CONFIG = json.load(open(resource_path("utils/config.json")))
 SIDEBAR_STYLE = json.load(open(resource_path("utils/sidebar_style.json")))
 
 app = Dash(
@@ -13,6 +14,11 @@ app = Dash(
 )
 
 sidebar = html.Div([
+    dcc.Dropdown(
+        id='user-dropdown',
+        options=(users := list(CONFIG.keys())),
+        value=users[0],
+    ),
     html.H2("Analisi spese", className="display-8"),
     html.Hr(),
     html.P("Seleziona la visualizzazione desiderata."),
@@ -31,12 +37,9 @@ app.layout = dbc.Container([
     dcc.Store(id='app-state', storage_type='session', data=None),
     dcc.Download(id="download-excel"),
     dcc.Download(id="download-excel-preview"),
-    html.Button("Download visible rows", id="download-btn-preview", style={"display": "none"}),  # Hidden
-    html.Button("Download all data", id="download-btn", style={"display": "none"}),  # Hidden
-    html.Div(
-        dash_table.DataTable(id='preview-table'),
-        style={"display": "none"},
-    ),
+    html.Button("Download visible rows", id="download-btn-preview", style={"display": "none"}), # Hidden
+    html.Button("Download all data", id="download-btn", style={"display": "none"}),             # Hidden
+    html.Div(dash_table.DataTable(id='preview-table'), style={"display": "none"}),              # Hidden
     html.Div(
         children=[
             dcc.Location(id="url"),

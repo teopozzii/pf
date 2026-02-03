@@ -2,10 +2,9 @@ import threading
 import time
 import webbrowser
 import sys
-from app import app  # Import your dash app object directly
+from app import app
 
 def run_server():
-    # Run the dash app (this blocks)
     app.run(debug=False, port=8050)
 
 if __name__ == '__main__':
