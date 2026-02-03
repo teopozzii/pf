@@ -1,15 +1,15 @@
 **TODO items**
 - [ ] Add owner extension (bottom/top of sidebar?)
-- [ ] Use BankStatement.data_dir to store data across sessions, replace default data load
 - [ ] Home page
+    - [ ] Render pivot of dataframe
+    - [ ] Insert new keywords into categories list and update config.json
+        - [ ] New page: review uncategorized items
     - [X] Drag and drop space for file upload.
         - [X] Initialize the data store to empty
         - [X] define a unique callback with it as output
         - [X] Callback takes input from the drag-drop.
         - [X] If no data has been loaded yet: nothing happens
     - [X] Button to download updated data
-    - [ ] Render pivot of dataframe
-    - [ ] Insert new keywords into categories list and update config.json
-        - [ ] New page: review uncategorized items
+- [X] Use BankStatement.data_dir to store data across sessions, replace default data load
 - [X] Separate graph pages
 - [X] Wrap app in executable
