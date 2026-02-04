@@ -1,13 +1,12 @@
-from dash import html, no_update, register_page, callback, Input, Output, State, dcc, dash_table
-from dash import callback_context as ctx
-
+from dash import html, register_page, dcc, dash_table
+from dash import Input, Output, State, callback
 import dash_bootstrap_components as dbc
 import pandas as pd
 import logging
 import warnings
-import base64
-import io
+import base64, io
 from utils.bankstatement import BankStatement
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,8 +18,6 @@ layout = html.Div([
     dcc.Store(id="data-upload-timestamp", storage_type='session', data=None),
     html.Div(style={"height": "20px"}),
     html.H3("Caricamento dati:"),
-
-    # Drag-and-drop upload component
     dcc.Upload(
         id='upload-data',
         children=html.Div([
@@ -42,30 +39,27 @@ layout = html.Div([
         },
         multiple=False
     ),
-
     html.Div(id='output-div'),
-
-    # Preview area for uploaded/processed data
-    html.Div(id='preview-div')
+    html.Div(id='preview-div') # Preview area for uploaded/processed data
 ])
+
 
 @callback(
     Output('output-div', 'children'),
     Output('app-state', 'data'),
     Output('data-upload-timestamp', 'data'),
+    Input('user-dropdown', 'value'),
     Input('upload-data', 'contents'),
-    Input('user', 'data'),
     State('upload-data', 'filename'),
-    State('app-state', 'data'),
     State('data-upload-timestamp', 'data'),
 )
-def handle_upload(contents, user, filename, existing_data, timestamp):
+def handle_upload(user, contents, filename, timestamp):
     """Parse uploaded CSV/XLS file, categorize if possible and store in app state.
 
     Returns a user-friendly message and the data as a list of records (or None on error).
     """
 
-    if ctx.triggered_id == 'user' or existing_data is None:
+    if contents is None:
         last = BankStatement(user)
         last = last.load_last_available_statement()
         df = last["data"]

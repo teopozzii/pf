@@ -2,11 +2,12 @@ from utils.graph import cumulative_graph
 from dash import html, dcc, Input, Output, State
 from dash import callback, register_page, no_update
 import pandas as pd
-from utils.config import CONFIG
+from utils.config import CONFIG, home_page_placeholders
 
 register_page(__name__, name="Spesa cumulata nel tempo, per categoria.")
 
 layout = html.Div([
+    *home_page_placeholders,
     dcc.Dropdown(
         id='category-dropdown-csum',
         options=[],
@@ -20,7 +21,7 @@ layout = html.Div([
     Output('category-dropdown-csum', "options"),
     Output('category-dropdown-csum', "value"),
     Input('app-state', 'modified_timestamp'),
-    Input('user', 'data'),
+    State('user-dropdown', 'value'),
     State('app-state', 'data')
 )
 def update_dropdown_options(_, user, statement_data):
@@ -34,11 +35,11 @@ def update_dropdown_options(_, user, statement_data):
 
 @callback(
     Output('statement-graph-csum', 'figure'),
-    Input('user', 'data'),
     Input('category-dropdown-csum', 'value'),
+    State('user-dropdown', 'value'),
     State('app-state', 'data')
 )
-def update_graph(user, selected_categories, statement_data):
+def update_graph(selected_categories, user, statement_data):
     if statement_data is None: return no_update
     statement_data = pd.DataFrame(statement_data)
     filtered_data = statement_data[statement_data[CONFIG[user]["headers"]["category"]].isin(selected_categories)]
