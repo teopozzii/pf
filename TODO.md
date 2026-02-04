@@ -1,7 +1,4 @@
 **TODO items**
-- [ ] Add owner extension
-    - [ ] Make the handle_upload callback react correctly to user change even if not on the home page
-    - [X] global dropdown at top of sidebar
 - [ ] Home page
     - [ ] Render pivot of dataframe
     - [ ] Insert new keywords into categories list and update config.json
@@ -12,6 +9,9 @@
         - [X] Callback takes input from the drag-drop.
         - [X] If no data has been loaded yet: nothing happens
     - [X] Button to download updated data
+- [X] Add owner extension
+    - [X] Make the handle_upload callback react correctly to user change even if not on the home page
+    - [X] global dropdown at top of sidebar
 - [X] Use BankStatement.data_dir to store data across sessions, replace default data load
 - [X] Separate graph pages
 - [X] Wrap app in executable
