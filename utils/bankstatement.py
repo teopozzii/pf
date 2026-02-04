@@ -4,12 +4,7 @@ import pandas as pd
 import re
 from pathlib import Path
 import logging
-import json
-
-from utils.paths import resource_path
-
-with open(Path(resource_path("utils/config.json")), 'r') as f:
-    config = json.load(f)
+from utils.config import CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -22,16 +17,16 @@ class BankStatement:
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
         self.owner = owner
-        self.headers = config[owner]["headers"]
+        self.headers = CONFIG[owner]["headers"]
         self.data = None
-        self.categories = categories if categories else config[owner]["default_categories"]
+        self.categories = categories if categories else CONFIG[owner]["default_categories"]
         self._update_logger("BankStatement initialized.")
 
     def _update_logger(self, message):
         logger.info(message)
 
     def load_last_available_statement(self):
-        name_pattern = r'categorized_\d{8}_\d{6}_' + config[self.owner]["sourcedoc_namepattern"] + r'\.xlsx'
+        name_pattern = r'categorized_\d{8}_\d{6}_' + CONFIG[self.owner]["sourcedoc_namepattern"] + r'\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
             if re.match(name_pattern, file.name):

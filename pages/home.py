@@ -1,4 +1,6 @@
-from dash import html, register_page, callback, Input, Output, State, dcc, dash_table
+from dash import html, no_update, register_page, callback, Input, Output, State, dcc, dash_table
+from dash import callback_context as ctx
+
 import dash_bootstrap_components as dbc
 import pandas as pd
 import logging
@@ -52,23 +54,23 @@ layout = html.Div([
     Output('app-state', 'data'),
     Output('data-upload-timestamp', 'data'),
     Input('upload-data', 'contents'),
+    Input('user', 'data'),
     State('upload-data', 'filename'),
     State('app-state', 'data'),
-    State('data-upload-timestamp', 'data')
+    State('data-upload-timestamp', 'data'),
 )
-def handle_upload(contents, filename, existing_data, timestamp):
+def handle_upload(contents, user, filename, existing_data, timestamp):
     """Parse uploaded CSV/XLS file, categorize if possible and store in app state.
 
     Returns a user-friendly message and the data as a list of records (or None on error).
     """
-    if existing_data and (not contents):
-        logger.info("Existing data in app-state, preserving it across uploads.")
-        return f"Dati caricati in sessione {timestamp} preservati.", existing_data, timestamp
-    if not (contents or existing_data):
-        last = BankStatement().load_last_available_statement() # tuple: dataframe and timestamp of saving
+
+    if ctx.triggered_id == 'user' or existing_data is None:
+        last = BankStatement(user)
+        last = last.load_last_available_statement()
         df = last["data"]
         if df is None:
-                return "Carica i tuoi estratti conto per iniziare a monitorare le tue spese.", None, timestamp
+            return "Carica i tuoi estratti conto per iniziare a monitorare le tue spese.", None, timestamp
         records = df.to_dict(orient="records")
         logger.info("Loaded default statement with %d records.", len(records))
         return f"Mostrando i dati caricati in sessione {last['time_saved']}.", records, last["time_saved"]
@@ -87,7 +89,7 @@ def handle_upload(contents, filename, existing_data, timestamp):
             logger.warning("Unsupported file type: %s (%s)", filename, content_type)
             return f"Formato file non supportato: {filename}", None
 
-        st = BankStatement()
+        st = BankStatement(user)
         st.data = st.process_statement(df)
         st.categorize_expenses()
         records = st.data.to_dict(orient="records")
@@ -95,7 +97,6 @@ def handle_upload(contents, filename, existing_data, timestamp):
         logger.info("Prepared %d records for storage in app-state.", len(records))
 
         if records:
-            st = BankStatement()
             st.data = pd.DataFrame.from_records(records)
             st.write_data(filename=f"categorized_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}_{filename}.xlsx")
             updated_timestamp = pd.Timestamp.now().isoformat()

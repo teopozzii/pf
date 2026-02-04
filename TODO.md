@@ -1,5 +1,7 @@
 **TODO items**
-- [ ] Add owner extension (bottom/top of sidebar?)
+- [ ] Add owner extension
+    - [ ] Make the handle_upload callback react correctly to user change even if not on the home page
+    - [X] global dropdown at top of sidebar
 - [ ] Home page
     - [ ] Render pivot of dataframe
     - [ ] Insert new keywords into categories list and update config.json
