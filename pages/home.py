@@ -1,4 +1,5 @@
 from dash import html, register_page, dcc, dash_table
+from dash import callback_context as ctx
 from dash import Input, Output, State, callback
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -6,7 +7,6 @@ import logging
 import warnings
 import base64, io
 from utils.bankstatement import BankStatement
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def handle_upload(user, contents, filename, timestamp):
     Returns a user-friendly message and the data as a list of records (or None on error).
     """
 
-    if contents is None:
+    if ctx.triggered_id == "user-dropdown" or contents is None:
         last = BankStatement(user)
         last = last.load_last_available_statement()
         df = last["data"]

@@ -33,8 +33,8 @@ class BankStatement:
                 files.append(str(file.resolve()))
         files.sort(reverse=True)
         if not files:
-            print("No matching Excel files found.")
-            return None
+            self._update_logger("No matching Excel files found.")
+            return {"data" : None, "time_saved" : None}
         # Remove files older than the past 3 ones
         for old_file in files[3:]:
             try:
