@@ -55,7 +55,7 @@ class BankStatement:
             self.data = data
         elif self.data is None: return None
         flag = self.headers["loc_identif"]
-        col_header_limit, row_header_limit = 10, 10
+        col_header_limit, row_header_limit = 30, 30
     
         headers_area = self.data.iloc[:col_header_limit, :row_header_limit]
         if flag not in headers_area.values:

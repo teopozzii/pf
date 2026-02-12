@@ -6,3 +6,4 @@ dash[pages]
 dash-bootstrap-components
 pyinstaller
 openpyxl
+xlrd>=2.0.1

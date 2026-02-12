@@ -1,5 +1,7 @@
 **TODO items**
+- [ ] Rimuovere righe vuote o non valide quando si carica il file (al momento tutto quanto sotto agli header viene caricato)
 - [ ] Home page
+    - [ ] upload-data contents currently cannot be overwritten via new upload; they should
     - [ ] Render pivot of dataframe
     - [ ] Insert new keywords into categories list and update config.json
         - [ ] New page: review uncategorized items
