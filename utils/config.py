@@ -1,10 +1,10 @@
 import json
+from typing import Any, Dict, List
 from utils.paths import resource_path
 from dash import dcc, html
 
-# config files:
-CONFIG = json.load(open(resource_path("utils/config.json")))
-SIDEBAR_STYLE = json.load(open(resource_path("utils/sidebar_style.json")))
+CONFIG: Dict[str, Dict[str, Any]] = json.load(open(resource_path("utils/config.json")))
+SIDEBAR_STYLE: Dict[str, Any] = json.load(open(resource_path("utils/sidebar_style.json")))
 
 # placeholder components:
 data_preview_msg_placeholder = html.Div(

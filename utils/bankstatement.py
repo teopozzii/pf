@@ -4,28 +4,29 @@ import pandas as pd
 import re
 from pathlib import Path
 import logging
+from typing import Optional, Dict, List, Any, Any
 from utils.config import CONFIG
 
 logger = logging.getLogger(__name__)
 
 class BankStatement:
-    def __init__(self, owner="papà", categories=None):
+    def __init__(self, owner: str = "papà", categories: Optional[Dict[str, List[str]]] = None):
         base_dir = Path.home() / ".bankstatementapp"
         if sys.platform == "win32":
             base_dir = Path(os.getenv('APPDATA')) / "BankStatementApp"
         self.data_dir = base_dir / "data"
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        self.owner = owner
-        self.headers = CONFIG[owner]["headers"]
-        self.data = None
-        self.categories = categories if categories else CONFIG[owner]["default_categories"]
+        self.owner: str = owner
+        self.headers: Dict[str, str] = CONFIG[owner]["headers"]
+        self.data: Optional[pd.DataFrame] = None
+        self.categories: Dict[str, List[str]] = categories if categories else CONFIG[owner]["default_categories"]
         self._update_logger("BankStatement initialized.")
 
-    def _update_logger(self, message):
+    def _update_logger(self, message: str) -> None:
         logger.info(message)
 
-    def load_last_available_statement(self):
+    def load_last_available_statement(self) -> Dict[str, Any]:
         name_pattern = r'categorized_\d{8}_\d{6}_' + CONFIG[self.owner]["sourcedoc_namepattern"] + r'\.xlsx'
         files = []
         for file in self.data_dir.iterdir():
@@ -50,7 +51,7 @@ class BankStatement:
             "time_saved" : time_of_saving
         }
 
-    def process_statement(self, data=None):
+    def process_statement(self, data: Optional[pd.DataFrame] = None) -> Optional[pd.DataFrame]:
         if data is not None:
             self.data = data
         elif self.data is None: return None
@@ -72,13 +73,13 @@ class BankStatement:
         self.data[self.headers["value"]] = pd.to_numeric(self.data[self.headers["value"]].astype(str).str.replace(',', '.'), errors='coerce')
         return self.data
 
-    def categorize_expenses(self):
+    def categorize_expenses(self) -> pd.DataFrame:
         description_col = self.headers.get("descript", "Descrizione")
         category_col = self.headers.get("category", "Categoria")
         if description_col not in self.data.columns:
             raise ValueError(f"'{description_col}' column not found in data.")
     
-        def categorize_row(description):
+        def categorize_row(description: Any) -> str:
             for category, keywords in self.categories.items():
                 if any(keyword.lower() in str(description).lower() for keyword in keywords):
                     return category
@@ -87,7 +88,7 @@ class BankStatement:
         self.data[category_col] = self.data[description_col].apply(categorize_row)
         return self.data
     
-    def write_data(self, filename="categorized_statement.xlsx"):
+    def write_data(self, filename: str = "categorized_statement.xlsx") -> None:
         output_path = self.data_dir / filename
         self.data.to_excel(output_path, index=False)
         self._update_logger(f"{self.__class__.__name__} data written to {output_path}")
