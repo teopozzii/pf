@@ -7,3 +7,8 @@ dash-bootstrap-components
 pyinstaller
 openpyxl
 xlrd>=2.0.1
+
+# Testing
+pytest
+pytest-cov
+pytest-mock

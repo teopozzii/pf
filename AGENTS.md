@@ -29,11 +29,9 @@ pip install -r requirements.txt
 
 ### Testing
 
-The project currently has **no test suite**. When adding tests:
-
 ```bash
-# Install test dependencies
-pip install pytest pytest-cov pytest-mock
+# Install test dependencies (already in requirements.txt)
+pip install pytest pytest-mock pytest-cov
 
 # Run all tests
 pytest
@@ -42,11 +40,20 @@ pytest
 pytest tests/test_bankstatement.py
 
 # Run a single test function
-pytest tests/test_bankstatement.py::test_categorize_expenses
+pytest tests/test_bankstatement.py::TestCategorizeExpenses::test_categorize_expenses_keyword_matching
 
 # Run with coverage
-pytest --cov=utils --cov=pages --cov-report=html
+pytest --cov=utils --cov-report=html
 ```
+
+### Test Structure
+
+Tests are located in `tests/` directory:
+
+- `tests/conftest.py` - Shared fixtures for DataFrames and test data
+- `tests/test_paths.py` - Path resolution tests
+- `tests/test_config.py` - Configuration loading tests
+- `tests/test_bankstatement.py` - Core business logic (categorization, parsing)
 
 ### Building Executables
 
