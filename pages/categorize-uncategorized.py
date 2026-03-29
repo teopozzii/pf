@@ -16,63 +16,6 @@ logger = logging.getLogger(__name__)
 
 register_page(__name__, path="/categorize-uncategorized", name="Categorizzazione")
 
-# Helper function to get truly unmapped descriptions
-def get_truly_unmapped_descriptions(df: pd.DataFrame, user: str) -> List[Dict[str, Any]]:
-    """
-    Filter to descriptions with ZERO keyword matches in merged categories.
-    Returns list of dicts with 'Descrizione', 'Dettaglio', and 'Count' columns.
-    """
-    bs = BankStatement(user)
-    merged_categories = bs.merged_categories
-    detail_col = CONFIG[user]["headers"].get("detail", "Dettaglio")
-    
-    uncategorized = df[df['Categoria'] == 'Uncategorized']
-    
-    if uncategorized.empty:
-        return []
-    
-    # Find truly unmapped: where concatenated description+detail has no keyword matches
-    truly_unmapped = []
-    for _, row in uncategorized.iterrows():
-        description = str(row['Descrizione']).strip() if pd.notna(row['Descrizione']) else ""
-        detail = str(row.get(detail_col, "")).strip() if pd.notna(row.get(detail_col)) else ""
-        combined_text = f"{description} {detail}".strip()
-        
-        matches_any = False
-        for keywords in merged_categories.values():
-            if any(kw.lower() in combined_text.lower() for kw in keywords):
-                matches_any = True
-                break
-        if not matches_any and combined_text:  # Avoid empty rows
-            truly_unmapped.append((description, detail))
-    
-    # Build result: descriptions + details + counts, sorted by count descending
-    result_rows = []
-    seen = set()
-    for description, detail in truly_unmapped:
-        key = (description, detail)
-        if key not in seen:
-            seen.add(key)
-            # Count how many transactions have this description+detail combo
-            matching_txs = uncategorized[
-                (uncategorized['Descrizione'] == description) & 
-                (uncategorized.get(detail_col, "") == detail)
-            ]
-            result_rows.append({
-                'Descrizione': description,
-                'Dettaglio': detail,
-                'Count': len(matching_txs),
-                'Category': ''
-            })
-    
-    # Sort by count descending
-    result_df = pd.DataFrame(result_rows)
-    if not result_df.empty:
-        result_df = result_df.sort_values('Count', ascending=False)
-    
-    return result_df.to_dict('records')
-
-
 layout = html.Div([
     *home_page_placeholders,
     dcc.Store(id='category-options-store', data=[]),
@@ -298,7 +241,9 @@ def load_uncategorized_items(
         return [], ""
     
     df = pd.DataFrame(statement_data)
-    table_data = get_truly_unmapped_descriptions(df, user)
+
+    bs = BankStatement(user)
+    table_data = bs.get_unmapped_transactions(df)
     
     # Filter by search text if provided
     if search_text and search_text.strip():
@@ -515,7 +460,7 @@ def save_categorizations(
         df[category_col] = df.apply(categorize_row, axis=1)
         
         # Reload uncategorized list (should be smaller now)
-        new_table_data = get_truly_unmapped_descriptions(df, user)
+        new_table_data = bs.get_unmapped_transactions(df)
         
         message = f"✓ Salvate {saved_count} nuove categorie. Sessione aggiornata."
         

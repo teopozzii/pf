@@ -220,3 +220,58 @@ class BankStatement:
     def get_file_hash(filename: str, content: bytes) -> str:
         """Generate hash for a file to track if it's been processed"""
         return hashlib.md5((filename + str(content)).encode()).hexdigest()
+
+    # Helper function to get truly unmapped descriptions
+    def get_unmapped_transactions(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
+        """
+        Filter to descriptions with ZERO keyword matches in merged categories.
+        Returns list of dicts with 'Descrizione', 'Dettaglio', and 'Count' columns.
+        """
+        merged_categories = self.merged_categories
+        detail_col = CONFIG[self.owner]["headers"].get("detail", "Dettaglio")
+
+        uncategorized = df[df['Categoria'] == 'Uncategorized']
+
+        if uncategorized.empty:
+            return []
+
+        # Find truly unmapped: where concatenated description+detail has no keyword matches
+        truly_unmapped = []
+        for _, row in uncategorized.iterrows():
+            description = str(row['Descrizione']).strip() if pd.notna(row['Descrizione']) else ""
+            detail = str(row.get(detail_col, "")).strip() if pd.notna(row.get(detail_col)) else ""
+            combined_text = f"{description} {detail}".strip()
+
+            matches_any = False
+            for keywords in merged_categories.values():
+                if any(kw.lower() in combined_text.lower() for kw in keywords):
+                    matches_any = True
+                    break
+            if not matches_any and combined_text:  # Avoid empty rows
+                truly_unmapped.append((description, detail))
+
+        # Build result: descriptions + details + counts, sorted by count descending
+        result_rows = []
+        seen = set()
+        for description, detail in truly_unmapped:
+            key = (description, detail)
+            if key not in seen:
+                seen.add(key)
+                # Count how many transactions have this description+detail combo
+                matching_txs = uncategorized[
+                    (uncategorized['Descrizione'] == description) &
+                    (uncategorized.get(detail_col, "") == detail)
+                ]
+                result_rows.append({
+                    'Descrizione': description,
+                    'Dettaglio': detail,
+                    'Count': len(matching_txs),
+                    'Category': ''
+                })
+
+        # Sort by count descending
+        result_df = pd.DataFrame(result_rows)
+        if not result_df.empty:
+            result_df = result_df.sort_values('Count', ascending=False)
+
+        return result_df.to_dict('records')
