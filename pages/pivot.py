@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Tuple
 import logging
 
-from utils.bankstatement import BankStatement
 from utils.config import home_page_placeholders, CONFIG
 
 logger = logging.getLogger(__name__)
@@ -165,10 +164,11 @@ layout = html.Div([
             dcc.Dropdown(
                 id='pivot-category-dropdown',
                 multi=True,
+                searchable=True,
                 placeholder='Seleziona categorie...',
                 style={'width': '100%'}
             ),
-        ], style={'flex': '1', 'marginRight': '20px'}),
+        ], style={'flex': '0 1 auto', 'maxWidth': '550px', 'minWidth': '200px', 'marginRight': '20px'}),
         
         html.Div([
             html.Label("Data inizio:", style={'fontWeight': 'bold', 'marginRight': '10px'}),
@@ -206,9 +206,12 @@ layout = html.Div([
         ),
     ], style={
         'display': 'flex',
+        'flexWrap': 'wrap',
         'alignItems': 'flex-end',
         'marginBottom': '20px',
-        'gap': '10px'
+        'gap': '10px',
+        'position': 'relative',
+        'zIndex': '100'
     }),
     
     # Info box
@@ -254,12 +257,30 @@ layout = html.Div([
             data=[],
             editable=False,
             row_selectable=False,
-            style_table={'overflowX': 'auto', 'overflowY': 'auto', 'maxHeight': '80vh'},
-            style_cell={'textAlign': 'left', 'padding': '10px', 'minWidth': '100px'},
+            style_table={
+                'overflowY': 'auto',
+                'maxHeight': '80vh',
+                'maxWidth': '100%',
+                'tableLayout': 'fixed'
+            },
+            style_cell={
+                'textAlign': 'left',
+                'padding': '8px',
+                'whiteSpace': 'normal',
+                'height': 'auto',
+                'minWidth': '50px'
+            },
+            style_cell_conditional=[
+                {'if': {'column_id': 'Data'}, 'width': '100px'},
+                {'if': {'column_id': 'Importo'}, 'width': '100px'},
+            ],
             style_header={'backgroundColor': '#f9f9f9', 'fontWeight': 'bold'},
             style_data_conditional=[],
         )
-    ], style={'overflowX': 'auto', 'width': '100%'}),
+    ], style={'width': '100%', 'overflow': 'hidden'}),
+    html.Div(
+        style={'height': '20px'}
+    ),  # Extra div to ensure proper spacing at the bottom
 ])
 
 
@@ -292,7 +313,7 @@ def populate_category_options(timestamp, user, statement_data):
     categories = sorted(df[category_col].unique().tolist())
     options = [{'label': cat, 'value': cat} for cat in categories]
     
-    return options, categories  # Default: all categories
+    return options, categories  # Default: all categories (user can clear/filter via dropdown)
 
 
 @callback(
@@ -405,7 +426,7 @@ def load_and_transform_data(
             'fontStyle': 'italic',
             'backgroundColor': '#e8f5e9',
             'position': 'sticky',
-            'top': '50px',
+            'top': '35px',  # Total row ≈40px; 5px buffer for visual separation
             'left': '0px',
             'zIndex': '9',
         },

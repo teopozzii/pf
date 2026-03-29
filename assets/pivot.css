@@ -1,0 +1,10 @@
+/* Pivot page styles */
+
+#pivot-category-dropdown {
+    max-width: 500px;
+}
+
+#pivot-category-dropdown .Select-value-label {
+    display: inline-block;
+    margin-right: 5px;
+}
