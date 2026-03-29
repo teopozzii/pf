@@ -8,3 +8,8 @@
     display: inline-block;
     margin-right: 5px;
 }
+
+/* Format Importo column as Euro */
+#pivot-table .dash-table-cell[aria-colindex="4"] {
+    text-align: right;
+}

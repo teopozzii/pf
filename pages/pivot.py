@@ -252,7 +252,7 @@ layout = html.Div([
                 {'name': 'Data', 'id': 'Data', 'type': 'text'},
                 {'name': 'Descrizione', 'id': 'Descrizione', 'type': 'text'},
                 {'name': 'Dettaglio', 'id': 'Dettaglio', 'type': 'text'},
-                {'name': 'Importo', 'id': 'Importo', 'type': 'numeric'},
+                {'name': 'Importo', 'id': 'Importo', 'type': 'text'},
             ],
             data=[],
             editable=False,
@@ -272,7 +272,7 @@ layout = html.Div([
             },
             style_cell_conditional=[
                 {'if': {'column_id': 'Data'}, 'width': '100px'},
-                {'if': {'column_id': 'Importo'}, 'width': '100px'},
+                {'if': {'column_id': 'Importo'}, 'width': '140px'},
             ],
             style_header={'backgroundColor': '#f9f9f9', 'fontWeight': 'bold'},
             style_data_conditional=[],
@@ -404,9 +404,19 @@ def load_and_transform_data(
     # Insert subtotal rows
     table_data = insert_subtotal_rows(df, user, config)
     
-    # Calculate info
+    # Convert Importo to float and calculate total BEFORE formatting
+    for row in table_data:
+        if 'Importo' in row:
+            row['Importo'] = float(row['Importo']) if not isinstance(row['Importo'], float) else row['Importo']
+    
+    # Calculate info with numeric values
     transaction_count = sum(1 for row in table_data if row['row_type'] == 'transaction')
-    total_amount = sum(row['Importo'] for row in table_data if row['row_type'] == 'transaction')
+    total_amount = sum(float(row['Importo']) for row in table_data if row['row_type'] == 'transaction')
+    
+    # Format Importo column as Euro currency strings
+    for row in table_data:
+        if 'Importo' in row:
+            row['Importo'] = f"€ {float(row['Importo']):.2f}"
     
     # Build conditional styling for row types
     style_data_conditional = [
