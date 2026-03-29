@@ -2,6 +2,8 @@ import os
 import sys
 import pandas as pd
 import re
+import json
+import hashlib
 from pathlib import Path
 import logging
 from typing import Optional, Dict, List, Any, Any
@@ -20,7 +22,14 @@ class BankStatement:
         self.owner: str = owner
         self.headers: Dict[str, str] = CONFIG[owner]["headers"]
         self.data: Optional[pd.DataFrame] = None
-        self.categories: Dict[str, List[str]] = categories if categories else CONFIG[owner]["default_categories"]
+        self.user_categories_path = self.data_dir / f"{owner}_categories.json"
+        
+        # Load and merge categories (defaults + learned)
+        self.merged_categories: Dict[str, List[str]] = self._load_and_merge_categories()
+        
+        # For backward compatibility
+        self.categories: Dict[str, List[str]] = self.merged_categories
+        
         self._update_logger("BankStatement initialized.")
 
     def _update_logger(self, message: str) -> None:
@@ -80,7 +89,7 @@ class BankStatement:
             raise ValueError(f"'{description_col}' column not found in data.")
     
         def categorize_row(description: Any) -> str:
-            for category, keywords in self.categories.items():
+            for category, keywords in self.merged_categories.items():
                 if any(keyword.lower() in str(description).lower() for keyword in keywords):
                     return category
             return 'Uncategorized'
@@ -88,7 +97,108 @@ class BankStatement:
         self.data[category_col] = self.data[description_col].apply(categorize_row)
         return self.data
     
-    def write_data(self, filename: str = "categorized_statement.xlsx") -> None:
+    def write_data(self, df: Optional[pd.DataFrame] = None, filename: str = "categorized_statement.xlsx") -> None:
+        """Write DataFrame to Excel. If df is None, uses self.data"""
         output_path = self.data_dir / filename
-        self.data.to_excel(output_path, index=False)
+        data_to_write = df if df is not None else self.data
+        data_to_write.to_excel(output_path, index=False)
         self._update_logger(f"{self.__class__.__name__} data written to {output_path}")
+    
+    def _load_and_merge_categories(self) -> Dict[str, List[str]]:
+        """Load user_categories.json and merge learned keywords with defaults"""
+        if self.user_categories_path.exists():
+            user_cats = json.load(open(self.user_categories_path))
+            merged = user_cats.get("default_categories", {}).copy()
+            
+            # Merge learned keywords into existing categories
+            for category, keywords in user_cats.get("learned_categories", {}).items():
+                if category in merged:
+                    merged[category].extend(keywords)
+                else:
+                    merged[category] = keywords
+            return merged
+        else:
+            # Fallback: Load from default_categories.json for first-time users
+            try:
+                from utils.paths import resource_path
+                defaults_path = resource_path("utils/default_categories.json")
+                defaults_data = json.load(open(defaults_path))
+                # In default_categories.json, categories are stored directly under user name
+                user_defaults = defaults_data.get(self.owner, {})
+                return user_defaults
+            except Exception as e:
+                logger.warning(f"Could not load default categories: {e}")
+                return {}
+    
+    def _load_user_categories_file(self) -> Dict:
+        """Load user_categories.json or return empty structure"""
+        if self.user_categories_path.exists():
+            return json.load(open(self.user_categories_path))
+        return {"default_categories": {}, "learned_categories": {}, "last_categorized_files": {}}
+    
+    def _write_user_categories_file(self, data: Dict) -> None:
+        """Write categories data to user_categories.json"""
+        self.user_categories_path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    
+    def _initialize_user_categories_from_config(self) -> None:
+        """Initialize user_categories.json from config.json defaults (one-time migration)"""
+        if not self.user_categories_path.exists():
+            # This would be called on first categorization save
+            # For now, we'll handle it when saving learned categories
+            pass
+    
+    def save_learned_category(self, keyword: str, category: str) -> None:
+        """Add a keyword (first 3-5 words from description) to learned_categories"""
+        cats_data = self._load_user_categories_file()
+        
+        # Initialize from defaults if first time
+        if not cats_data.get("default_categories"):
+            try:
+                from utils.paths import resource_path
+                defaults_path = resource_path("utils/default_categories.json")
+                defaults_data = json.load(open(defaults_path))
+                # In default_categories.json, categories are stored directly under user name
+                user_defaults = defaults_data.get(self.owner, {})
+                cats_data["default_categories"] = user_defaults
+                logger.info(f"Initialized {self.user_categories_path} with defaults")
+            except Exception as e:
+                logger.warning(f"Could not initialize defaults: {e}")
+        
+        # Ensure learned_categories exists
+        if "learned_categories" not in cats_data:
+            cats_data["learned_categories"] = {}
+        
+        # Ensure category exists in learned_categories
+        if category not in cats_data["learned_categories"]:
+            cats_data["learned_categories"][category] = []
+        
+        # Add keyword if not already there (case-insensitive check)
+        if keyword.lower() not in [k.lower() for k in cats_data["learned_categories"][category]]:
+            cats_data["learned_categories"][category].append(keyword)
+        
+        self._write_user_categories_file(cats_data)
+        # Rebuild merged categories
+        self.merged_categories = self._load_and_merge_categories()
+        self._update_logger(f"Learned category: '{keyword}' -> '{category}'")
+    
+    def add_new_category(self, category_name: str) -> None:
+        """Add a new empty category to user_categories.json"""
+        cats_data = self._load_user_categories_file()
+        
+        if category_name not in cats_data.get("default_categories", {}):
+            if "default_categories" not in cats_data:
+                cats_data["default_categories"] = {}
+            if "learned_categories" not in cats_data:
+                cats_data["learned_categories"] = {}
+            
+            cats_data["default_categories"][category_name] = []
+            cats_data["learned_categories"][category_name] = []
+        
+        self._write_user_categories_file(cats_data)
+        self.merged_categories = self._load_and_merge_categories()
+        self._update_logger(f"Added new category: '{category_name}'")
+    
+    @staticmethod
+    def get_file_hash(filename: str, content: bytes) -> str:
+        """Generate hash for a file to track if it's been processed"""
+        return hashlib.md5((filename + str(content)).encode()).hexdigest()

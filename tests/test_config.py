@@ -25,8 +25,16 @@ class TestConfig:
             assert header in headers, f"Missing required header: {header}"
 
     def test_config_default_user_categories_structure(self):
-        from utils.config import CONFIG
-        categories = CONFIG["papà"]["default_categories"]
+        import json
+        from utils.paths import resource_path
+        
+        # Default categories are now stored in default_categories.json
+        default_cat_path = resource_path("utils/default_categories.json")
+        with open(default_cat_path) as f:
+            default_categories = json.load(f)
+        
+        assert "papà" in default_categories
+        categories = default_categories["papà"]
         
         assert isinstance(categories, dict)
         assert len(categories) > 0
