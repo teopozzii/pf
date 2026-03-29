@@ -3,7 +3,7 @@ Page for categorizing uncategorized transactions from current session.
 Shows only truly unmapped descriptions (those with zero keyword matches).
 """
 
-from dash import html, dcc, Input, Output, State, callback, register_page, no_update, callback_context as ctx, ALL
+from dash import html, dcc, Input, Output, State, callback, register_page, no_update, ALL
 from dash.dash_table import DataTable
 import pandas as pd
 from typing import List, Dict, Any, Tuple
@@ -14,7 +14,7 @@ from utils.config import home_page_placeholders, CONFIG
 
 logger = logging.getLogger(__name__)
 
-register_page(__name__, path="/categorize-uncategorized", name="Categorizza Non Categorizzati")
+register_page(__name__, path="/categorize-uncategorized", name="Categorizzazione")
 
 # Helper function to get truly unmapped descriptions
 def get_truly_unmapped_descriptions(df: pd.DataFrame, user: str) -> List[Dict[str, Any]]:
@@ -76,13 +76,13 @@ def get_truly_unmapped_descriptions(df: pd.DataFrame, user: str) -> List[Dict[st
 layout = html.Div([
     *home_page_placeholders,
     dcc.Store(id='category-options-store', data=[]),
-    
-    html.H1("Categorizza Transazioni Non Categorizzate"),
+
+    html.H1("Categorizzazione Transazioni Non Categorizzate", style={'marginTop': '15px'}),
     
     html.Div(
         "Qui puoi assegnare manualmente le transazioni che non sono state categorizzate automaticamente. "
         "Verranno apprese per i futuri caricamenti.",
-        style={'marginBottom': '20px', 'color': '#666'}
+        style={'marginBottom': '10px', 'color': '#666'}
     ),
     
     # Info box
@@ -98,46 +98,6 @@ layout = html.Div([
             'marginBottom': '20px',
             'borderRadius': '4px'
         }
-    ),
-    
-    # Search and controls row
-    html.Div([
-        dcc.Input(
-            id='search-description',
-            type='text',
-            placeholder='Cerca per descrizione...',
-            style={'width': '300px', 'padding': '8px', 'marginRight': '10px'}
-        ),
-        dcc.Dropdown(
-            id='rows-per-page',
-            options=[
-                {'label': '10 per pagina', 'value': 10},
-                {'label': '25 per pagina', 'value': 25},
-                {'label': '50 per pagina', 'value': 50},
-            ],
-            value=10,
-            style={'width': '150px'}
-        ),
-        html.Button('🔄 Aggiorna', id='refresh-table-btn', n_clicks=0, style={'marginLeft': '10px'})
-    ], style={'marginBottom': '20px', 'display': 'flex', 'gap': '10px'}),
-    
-    # DataTable
-    DataTable(
-        id='uncategorized-table',
-        columns=[
-            {'name': 'Descrizione', 'id': 'Descrizione', 'type': 'text'},
-            {'name': 'Conteggio', 'id': 'Count', 'type': 'numeric'},
-            {'name': 'Categoria', 'id': 'Category', 'type': 'text'},
-        ],
-        data=[],
-        editable=False,
-        row_selectable=False,
-        style_cell={'textAlign': 'left', 'padding': '10px'},
-        style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
-        style_data_conditional=[
-            {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}
-        ],
-        page_size=10,
     ),
     
     # Hidden store to track current dropdown selections
@@ -255,6 +215,50 @@ layout = html.Div([
         'justifyContent': 'center',
         'alignItems': 'center'
     }),
+
+    # Search and controls row
+    html.Div([
+        dcc.Input(
+            id='search-description',
+            type='text',
+            placeholder='Cerca per descrizione...',
+            style={'width': '300px', 'padding': '8px', 'marginRight': '10px'}
+        ),
+        dcc.Dropdown(
+            id='rows-per-page',
+            options=[
+                {'label': '10 per pagina', 'value': 10},
+                {'label': '25 per pagina', 'value': 25},
+                {'label': '50 per pagina', 'value': 50},
+            ],
+            value=10,
+            style={'width': '150px'}
+        ),
+        html.Button('🔄 Aggiorna', id='refresh-table-btn', n_clicks=0, style={'marginLeft': '10px'})
+    ], style={'marginBottom': '20px', 'display': 'flex', 'gap': '10px'}),
+
+    # DataTable
+    html.Div([
+        DataTable(
+            id='uncategorized-table',
+            columns=[
+                {'name': 'Descrizione', 'id': 'Descrizione', 'type': 'text'},
+                {'name': 'Dettaglio', 'id': 'Dettaglio', 'type': 'text'},
+                {'name': 'Conteggio', 'id': 'Count', 'type': 'numeric'},
+                {'name': 'Categoria', 'id': 'Category', 'type': 'text'},
+            ],
+            data=[],
+            editable=False,
+            row_selectable=False,
+            style_table={'overflowX': 'auto', 'overflowY': 'auto', 'maxWidth': '100%'},
+            style_cell={'textAlign': 'left', 'padding': '10px', 'minWidth': '150px', 'whiteSpace': 'normal'},
+            style_header={'backgroundColor': 'rgb(230, 230, 230)', 'fontWeight': 'bold'},
+            style_data_conditional=[
+                {'if': {'row_index': 'odd'}, 'backgroundColor': 'rgb(248, 248, 248)'}
+            ],
+            page_size=10,
+        )
+    ], style={'overflowX': 'auto', 'width': '100%'})
 ])
 
 
@@ -333,16 +337,22 @@ def populate_dropdowns(table_data: List[Dict], user: str):
         
         dropdowns.append(
             html.Div([
-                html.Span(display_text, style={'marginRight': '20px', 'fontWeight': 'bold'}),
-                html.Span(f"({row['Count']} transazioni)", style={'marginRight': '20px', 'color': '#666'}),
+                # Left-aligned description and count
+                html.Div([
+                    html.Span(display_text, style={'fontWeight': 'bold'}),
+                ], style={'display': 'flex', 'gap': '20px', 'flex': '1'}),
+                html.Div([
+                    html.Span(f"({row['Count']} transazioni)", style={'color': '#666', 'minWidth': '120px'}),
+                ], style={'display': 'flex', 'alignItems': 'center', 'gap': '20px', 'flex': '1'}),
+                # Right-aligned dropdown
                 dcc.Dropdown(
                     id={'type': 'category-dropdown', 'index': i},
                     options=dropdown_options,
                     value=row.get('Category', ''),
                     placeholder='Seleziona categoria...',
-                    style={'width': '300px'}
+                    style={'width': '300px', 'flexShrink': 0}
                 ),
-            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '15px', 'gap': '10px'})
+            ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '15px', 'gap': '20px', 'justifyContent': 'space-between'})
         )
     
     return dropdowns, dropdown_options
