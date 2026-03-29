@@ -109,3 +109,124 @@ class TestProcessStatement:
         assert pd.api.types.is_numeric_dtype(result["Importo"])
         assert result["Importo"].iloc[0] == -50.00
         assert result["Importo"].iloc[1] == 100.50
+
+
+class TestMultiColumnMatching:
+    """Test suite for multi-column (Description + Detail) concatenated keyword matching"""
+    
+    def test_categorize_expenses_concatenated_match(self, sample_headers):
+        """Test that keywords match against concatenated Description + Detail"""
+        categories = {
+            "Trasporti": ["Bonifico ordinario John Smith"]
+        }
+        bs = BankStatement(owner="papà", categories=categories)
+        bs.headers = sample_headers
+        bs.merged_categories = categories
+        
+        df = pd.DataFrame({
+            "Descrizione": ["Bonifico ordinario"],
+            "Dettaglio": ["John Smith"],
+            "Categoria": [""]
+        })
+        bs.data = df
+        
+        result = bs.categorize_expenses()
+        assert result["Categoria"].iloc[0] == "Trasporti"
+    
+    def test_categorize_expenses_concatenated_no_match_different_detail(self, sample_headers):
+        """Test that concatenated keyword does NOT match with different Detail"""
+        categories = {
+            "Trasporti": ["Bonifico ordinario John Smith"]
+        }
+        bs = BankStatement(owner="papà", categories=categories)
+        bs.headers = sample_headers
+        bs.merged_categories = categories
+        
+        df = pd.DataFrame({
+            "Descrizione": ["Bonifico ordinario"],
+            "Dettaglio": ["Jane Doe"],
+            "Categoria": [""]
+        })
+        bs.data = df
+        
+        result = bs.categorize_expenses()
+        assert result["Categoria"].iloc[0] == "Uncategorized"
+    
+    def test_categorize_expenses_null_detail_matching(self, sample_headers):
+        """Test that matching works when Detail is null/NaN"""
+        categories = {
+            "Trasporti": ["Bonifico ordinario"]
+        }
+        bs = BankStatement(owner="papà", categories=categories)
+        bs.headers = sample_headers
+        bs.merged_categories = categories
+        
+        df = pd.DataFrame({
+            "Descrizione": ["Bonifico ordinario"],
+            "Dettaglio": [None],
+            "Categoria": [""]
+        })
+        bs.data = df
+        
+        result = bs.categorize_expenses()
+        assert result["Categoria"].iloc[0] == "Trasporti"
+    
+    def test_categorize_expenses_null_description_matching(self, sample_headers):
+        """Test that matching works when Description is null but Detail has keyword"""
+        categories = {
+            "Shopping": ["John Smith"]
+        }
+        bs = BankStatement(owner="papà", categories=categories)
+        bs.headers = sample_headers
+        bs.merged_categories = categories
+        
+        df = pd.DataFrame({
+            "Descrizione": [None],
+            "Dettaglio": ["John Smith"],
+            "Categoria": [""]
+        })
+        bs.data = df
+        
+        result = bs.categorize_expenses()
+        assert result["Categoria"].iloc[0] == "Shopping"
+    
+    def test_categorize_expenses_both_null(self, sample_headers):
+        """Test that both null/NaN returns Uncategorized"""
+        categories = {
+            "Trasporti": ["Bonifico ordinario"]
+        }
+        bs = BankStatement(owner="papà", categories=categories)
+        bs.headers = sample_headers
+        bs.merged_categories = categories
+        
+        df = pd.DataFrame({
+            "Descrizione": [None],
+            "Dettaglio": [None],
+            "Categoria": [""]
+        })
+        bs.data = df
+        
+        result = bs.categorize_expenses()
+        assert result["Categoria"].iloc[0] == "Uncategorized"
+    
+    def test_save_learned_category_multi_column_concatenation(self, sample_headers):
+        """Test that multi-column save concatenates description and detail"""
+        bs = BankStatement(owner="papà")
+        bs.headers = sample_headers
+        
+        # Save with both description and detail
+        bs.save_learned_category_multi_column("Bonifico ordinario", "John Smith", "Trasporti")
+        
+        # Check that the keyword was saved as concatenated string
+        assert "Bonifico ordinario John Smith" in bs.merged_categories.get("Trasporti", [])
+    
+    def test_save_learned_category_multi_column_empty_detail(self, sample_headers):
+        """Test that save works with empty detail (backward compat)"""
+        bs = BankStatement(owner="papà")
+        bs.headers = sample_headers
+        
+        # Save with empty detail (like old single-column method)
+        bs.save_learned_category_multi_column("CARREFOUR", "", "Cibo")
+        
+        # Should be saved as just the description
+        assert "CARREFOUR" in bs.merged_categories.get("Cibo", [])

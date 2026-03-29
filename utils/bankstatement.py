@@ -84,17 +84,24 @@ class BankStatement:
 
     def categorize_expenses(self) -> pd.DataFrame:
         description_col = self.headers.get("descript", "Descrizione")
+        detail_col = self.headers.get("detail", "Dettaglio")
         category_col = self.headers.get("category", "Categoria")
         if description_col not in self.data.columns:
             raise ValueError(f"'{description_col}' column not found in data.")
     
-        def categorize_row(description: Any) -> str:
+        def categorize_row(row):
+            # Concatenate Description and Detail (handling nulls gracefully)
+            description = str(row.get(description_col, "")).strip() if pd.notna(row.get(description_col)) else ""
+            detail = str(row.get(detail_col, "")).strip() if pd.notna(row.get(detail_col)) else ""
+            combined_text = f"{description} {detail}".strip()
+            
+            # Match against concatenated text
             for category, keywords in self.merged_categories.items():
-                if any(keyword.lower() in str(description).lower() for keyword in keywords):
+                if any(keyword.lower() in combined_text.lower() for keyword in keywords):
                     return category
             return 'Uncategorized'
         
-        self.data[category_col] = self.data[description_col].apply(categorize_row)
+        self.data[category_col] = self.data.apply(categorize_row, axis=1)
         return self.data
     
     def write_data(self, df: Optional[pd.DataFrame] = None, filename: str = "categorized_statement.xlsx") -> None:
@@ -148,7 +155,12 @@ class BankStatement:
             pass
     
     def save_learned_category(self, keyword: str, category: str) -> None:
-        """Add a keyword (first 3-5 words from description) to learned_categories"""
+        """Add a keyword to learned_categories [DEPRECATED - use save_learned_category_multi_column]"""
+        # Kept for backward compatibility; use save_learned_category_multi_column instead
+        self.save_learned_category_multi_column(keyword, "", category)
+    
+    def save_learned_category_multi_column(self, description: str, detail: str, category: str) -> None:
+        """Add a multi-column concatenated keyword (Description + Detail) to learned_categories"""
         cats_data = self._load_user_categories_file()
         
         # Initialize from defaults if first time
@@ -172,14 +184,20 @@ class BankStatement:
         if category not in cats_data["learned_categories"]:
             cats_data["learned_categories"][category] = []
         
-        # Add keyword if not already there (case-insensitive check)
-        if keyword.lower() not in [k.lower() for k in cats_data["learned_categories"][category]]:
-            cats_data["learned_categories"][category].append(keyword)
+        # Concatenate description and detail (handle nulls/empty gracefully)
+        description = str(description).strip() if description else ""
+        detail = str(detail).strip() if detail else ""
+        combined_keyword = f"{description} {detail}".strip()
+        
+        # Add keyword if not already there and not empty (case-insensitive check)
+        if combined_keyword and combined_keyword.lower() not in [k.lower() for k in cats_data["learned_categories"][category]]:
+            cats_data["learned_categories"][category].append(combined_keyword)
         
         self._write_user_categories_file(cats_data)
         # Rebuild merged categories
         self.merged_categories = self._load_and_merge_categories()
-        self._update_logger(f"Learned category: '{keyword}' -> '{category}'")
+        self._update_logger(f"Learned category: '{combined_keyword}' -> '{category}'")
+
     
     def add_new_category(self, category_name: str) -> None:
         """Add a new empty category to user_categories.json"""

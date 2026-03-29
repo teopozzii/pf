@@ -20,33 +20,57 @@ register_page(__name__, path="/categorize-uncategorized", name="Categorizza Non 
 def get_truly_unmapped_descriptions(df: pd.DataFrame, user: str) -> List[Dict[str, Any]]:
     """
     Filter to descriptions with ZERO keyword matches in merged categories.
-    Returns list of dicts with 'Descrizione' and 'Count' columns.
+    Returns list of dicts with 'Descrizione', 'Dettaglio', and 'Count' columns.
     """
     bs = BankStatement(user)
     merged_categories = bs.merged_categories
+    detail_col = CONFIG[user]["headers"].get("detail", "Dettaglio")
     
     uncategorized = df[df['Categoria'] == 'Uncategorized']
     
     if uncategorized.empty:
         return []
     
+    # Find truly unmapped: where concatenated description+detail has no keyword matches
     truly_unmapped = []
-    for description in uncategorized['Descrizione'].unique():
+    for _, row in uncategorized.iterrows():
+        description = str(row['Descrizione']).strip() if pd.notna(row['Descrizione']) else ""
+        detail = str(row.get(detail_col, "")).strip() if pd.notna(row.get(detail_col)) else ""
+        combined_text = f"{description} {detail}".strip()
+        
         matches_any = False
         for keywords in merged_categories.values():
-            if any(kw.lower() in str(description).lower() for kw in keywords):
+            if any(kw.lower() in combined_text.lower() for kw in keywords):
                 matches_any = True
                 break
-        if not matches_any:
-            truly_unmapped.append(description)
+        if not matches_any and combined_text:  # Avoid empty rows
+            truly_unmapped.append((description, detail))
     
-    # Build result: descriptions + counts, sorted by count descending
-    filtered_df = uncategorized[uncategorized['Descrizione'].isin(truly_unmapped)]
-    grouped = filtered_df.groupby('Descrizione').size().reset_index(name='Count')
-    grouped = grouped.sort_values('Count', ascending=False)
-    grouped['Category'] = ''  # Empty dropdown selection
+    # Build result: descriptions + details + counts, sorted by count descending
+    result_rows = []
+    seen = set()
+    for description, detail in truly_unmapped:
+        key = (description, detail)
+        if key not in seen:
+            seen.add(key)
+            # Count how many transactions have this description+detail combo
+            matching_txs = uncategorized[
+                (uncategorized['Descrizione'] == description) & 
+                (uncategorized.get(detail_col, "") == detail)
+            ]
+            result_rows.append({
+                'Descrizione': description,
+                'Dettaglio': detail,
+                'Count': len(matching_txs),
+                'Category': ''
+            })
     
-    return grouped[['Descrizione', 'Count', 'Category']].to_dict('records')
+    # Sort by count descending
+    result_df = pd.DataFrame(result_rows)
+    if not result_df.empty:
+        result_df = result_df.sort_values('Count', ascending=False)
+    
+    return result_df.to_dict('records')
 
 
 layout = html.Div([
@@ -304,9 +328,12 @@ def populate_dropdowns(table_data: List[Dict], user: str):
     # Create dropdown for each row
     dropdowns = []
     for i, row in enumerate(table_data):
+        # Display both Description and Detail (if Detail exists)
+        display_text = f"{row['Descrizione']}, {row['Dettaglio']}" if row.get('Dettaglio') else row['Descrizione']
+        
         dropdowns.append(
             html.Div([
-                html.Span(f"{row['Descrizione']}", style={'marginRight': '20px', 'fontWeight': 'bold'}),
+                html.Span(display_text, style={'marginRight': '20px', 'fontWeight': 'bold'}),
                 html.Span(f"({row['Count']} transazioni)", style={'marginRight': '20px', 'color': '#666'}),
                 dcc.Dropdown(
                     id={'type': 'category-dropdown', 'index': i},
@@ -437,14 +464,22 @@ def save_categorizations(
             logger.error(f"Error adding new category: {e}")
             return no_update, f"❌ Errore nella creazione della categoria: {e}", no_update, no_update
     
-    # Save each learned category assignment
+    # Save each learned category assignment with both Description and Detail
     saved_count = 0
+    detail_col = CONFIG[user]["headers"].get("detail", "Dettaglio")
+    
     for description, category in dropdown_selections.items():
         if category and category != '__CREATE_NEW__':
-            # Extract first 3-5 words as keyword
-            keyword = " ".join(description.split()[:3])
+            # Find the detail for this description from the table
+            detail = ""
+            for row in table_data:
+                if row.get('Descrizione') == description:
+                    detail = row.get('Dettaglio', '')
+                    break
+            
             try:
-                bs.save_learned_category(keyword, category)
+                # Save using multi-column method (concatenates description + detail)
+                bs.save_learned_category_multi_column(description, detail, category)
                 saved_count += 1
             except Exception as e:
                 logger.error(f"Error saving learned category for {description}: {e}")
@@ -453,15 +488,21 @@ def save_categorizations(
     if statement_data:
         df = pd.DataFrame(statement_data)
         description_col = CONFIG[user]["headers"]["descript"]
+        detail_col = CONFIG[user]["headers"].get("detail", "Dettaglio")
         category_col = CONFIG[user]["headers"]["category"]
         
-        def categorize_row(description: Any) -> str:
+        def categorize_row(row):
+            # Use multi-column concatenated matching (same logic as BankStatement.categorize_expenses)
+            description = str(row.get(description_col, "")).strip() if pd.notna(row.get(description_col)) else ""
+            detail = str(row.get(detail_col, "")).strip() if pd.notna(row.get(detail_col)) else ""
+            combined_text = f"{description} {detail}".strip()
+            
             for category, keywords in bs.merged_categories.items():
-                if any(kw.lower() in str(description).lower() for kw in keywords):
+                if any(kw.lower() in combined_text.lower() for kw in keywords):
                     return category
             return 'Uncategorized'
         
-        df[category_col] = df[description_col].apply(categorize_row)
+        df[category_col] = df.apply(categorize_row, axis=1)
         
         # Reload uncategorized list (should be smaller now)
         new_table_data = get_truly_unmapped_descriptions(df, user)
