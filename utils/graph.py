@@ -1,7 +1,9 @@
 import plotly.express as px
+import plotly.graph_objs as go
+import pandas as pd
 from utils.config import CONFIG
 
-def category_graph(user, filtered_data):
+def category_graph(user: str, filtered_data: pd.DataFrame) -> go.Figure:
     return px.histogram(
         filtered_data,
         x=CONFIG[user]["headers"]["date"],
@@ -11,7 +13,7 @@ def category_graph(user, filtered_data):
         nbins=100
     )
 
-def cumulative_graph(user, filtered_data):
+def cumulative_graph(user: str, filtered_data: pd.DataFrame) -> go.Figure:
     filtered_data['Cumulative'] = filtered_data.groupby(CONFIG[user]["headers"]["category"])[CONFIG[user]["headers"]["value"]].cumsum()
     fig = px.line(
         filtered_data,

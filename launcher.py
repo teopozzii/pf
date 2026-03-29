@@ -4,7 +4,7 @@ import webbrowser
 import sys
 from app import app
 
-def run_server():
+def run_server() -> None:
     app.run(debug=False, port=8050)
 
 if __name__ == '__main__':

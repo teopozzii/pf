@@ -56,6 +56,19 @@
    python app.py
    ```
 
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run a specific test file
+pytest tests/test_bankstatement.py
+
+# Run with coverage
+pytest --cov=utils --cov-report=term-missing
+```
+
 ## Project Structure
 
 ```
@@ -77,6 +90,11 @@ conto/
 │   ├── paths.py               # Cross-platform path resolution
 │   ├── graph.py               # Plotly visualizations
 │   └── common_utils.py        # Jupyter utilities
+├── tests/                      # Test suite
+│   ├── conftest.py            # Shared fixtures
+│   ├── test_paths.py          # Path resolution tests
+│   ├── test_config.py         # Configuration tests
+│   └── test_bankstatement.py  # Business logic tests
 ├── assets/                     # Images, icons, CSS
 ├── docs/                       # Detailed documentation
 │   ├── ARCHITECTURE.md        # System design & dependencies

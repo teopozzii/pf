@@ -1,7 +1,9 @@
 from utils.graph import category_graph
+import plotly.graph_objs as go
 from dash import html, dcc, Input, Output, State
 from dash import callback, register_page, no_update
 import pandas as pd
+from typing import List, Dict, Any
 from utils.config import CONFIG, home_page_placeholders
 
 register_page(__name__, name="Movimenti bancari, suddivisi per categoria.")
@@ -24,7 +26,11 @@ layout = html.Div([
     State('user-dropdown', 'value'),
     State('app-state', 'data')
 )
-def update_dropdown_options(_, user, statement_data):
+def update_dropdown_options(
+    _: Any,
+    user: str,
+    statement_data: Any
+) -> tuple[List[Dict[str, str]], List[str]]:
     if statement_data is None: return no_update
     statement_data = pd.DataFrame(statement_data)
     categories = statement_data[CONFIG[user]["headers"]["category"]].unique()
@@ -39,7 +45,11 @@ def update_dropdown_options(_, user, statement_data):
     State('user-dropdown', 'value'),
     State('app-state', 'data')
 )
-def update_graph(selected_categories, user, statement_data):
+def update_graph(
+    selected_categories: List[str],
+    user: str,
+    statement_data: Any
+) -> go.Figure:
     if statement_data is None: return no_update
     statement_data = pd.DataFrame(statement_data)
     filtered_data = statement_data[statement_data[CONFIG[user]["headers"]["category"]].isin(selected_categories)]
