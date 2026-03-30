@@ -1,15 +1,15 @@
 from dash import dash, Dash, html, dcc, dash_table, page_registry, callback, Input, Output
 import dash_bootstrap_components as dbc
 from utils.paths import resource_path
-from utils.config import CONFIG, SIDEBAR_STYLE, home_page_placeholders
+from utils.config import CONFIG, SIDEBAR_STYLE, HeartbeatTracker, home_page_placeholders
 from flask import jsonify
 import logging
 import time
 
 logger = logging.getLogger(__name__)
 
-# Heartbeat tracking (browser sends heartbeat every 2 seconds)
-LAST_BROWSER_HEARTBEAT = time.time()  # Initialize to now
+# Single global instance shared between server and launcher
+heartbeat_tracker = HeartbeatTracker()
 
 app = Dash(
     __name__,
@@ -82,8 +82,7 @@ def browser_heartbeat():
     Browser sends a heartbeat every 2 seconds to indicate it's still active.
     Launcher monitors this endpoint to detect when browser closes.
     """
-    global LAST_BROWSER_HEARTBEAT
-    LAST_BROWSER_HEARTBEAT = time.time()
+    heartbeat_tracker.record_heartbeat()
     return jsonify({"status": "heartbeat_received"}), 200
 
 
@@ -94,7 +93,7 @@ def last_heartbeat_time():
     Returns how many seconds since the last browser heartbeat.
     Launcher uses this to detect if browser is still connected.
     """
-    elapsed = time.time() - LAST_BROWSER_HEARTBEAT
+    elapsed = heartbeat_tracker.seconds_since_heartbeat()
     return jsonify({"seconds_since_heartbeat": elapsed}), 200
 
 

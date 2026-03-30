@@ -6,8 +6,7 @@ import signal
 import atexit
 import logging
 from werkzeug.serving import make_server
-from app import app
-import requests
+from app import app, heartbeat_tracker
 
 # Configure logging
 logging.basicConfig(
@@ -21,26 +20,24 @@ SHUTDOWN_REQUESTED = False
 server = None
 server_thread = None
 monitor_thread = None
-HEALTH_CHECK_FAIL_COUNT = 0
-HEALTH_CHECK_FAIL_THRESHOLD = 3  # Fail 3 times before assuming browser is closed
+HEARTBEAT_FAIL_COUNT = 0
+HEARTBEAT_FAIL_THRESHOLD = 3  # Fail 3 times before assuming browser is closed
 
 
 def check_browser_heartbeat() -> bool:
     """
     Check if the browser has sent a heartbeat recently (within 4 seconds).
+    
+    This uses direct in-memory access to the heartbeat_tracker object,
+    making it robust and scalable - no hardcoded addresses, works with
+    any deployment architecture (local, Docker, remote, etc).
+    
     Returns True if browser is active, False if heartbeat is stale.
     """
     try:
-        response = requests.get(
-            'http://127.0.0.1:8050/last_heartbeat',
-            timeout=2
-        )
-        data = response.json()
-        seconds_since_heartbeat = data.get('seconds_since_heartbeat', 999)
+        seconds_since = heartbeat_tracker.seconds_since_heartbeat()
         # Browser should send heartbeat every 2 seconds, so if > 4 seconds, something is wrong
-        return seconds_since_heartbeat < 4
-    except (requests.ConnectionError, requests.Timeout):
-        return False
+        return seconds_since < 4
     except Exception as e:
         logger.debug(f"Heartbeat check error: {e}")
         return False
@@ -52,7 +49,7 @@ def monitor_browser() -> None:
     Browser sends heartbeat via /heartbeat endpoint every 2 seconds.
     If 3 consecutive heartbeat checks fail, assume browser is closed → shutdown.
     """
-    global SHUTDOWN_REQUESTED, HEALTH_CHECK_FAIL_COUNT
+    global SHUTDOWN_REQUESTED, HEARTBEAT_FAIL_COUNT
     
     logger.info("Browser heartbeat monitor started (checking every 3 seconds)")
     
@@ -62,13 +59,13 @@ def monitor_browser() -> None:
     while not SHUTDOWN_REQUESTED and server_thread.is_alive():
         try:
             if check_browser_heartbeat():
-                HEALTH_CHECK_FAIL_COUNT = 0  # Reset counter on successful heartbeat
+                HEARTBEAT_FAIL_COUNT = 0  # Reset counter on successful heartbeat
                 logger.debug("Browser heartbeat received")
             else:
-                HEALTH_CHECK_FAIL_COUNT += 1
-                logger.info(f"Browser heartbeat stale ({HEALTH_CHECK_FAIL_COUNT}/{HEALTH_CHECK_FAIL_THRESHOLD})")
+                HEARTBEAT_FAIL_COUNT += 1
+                logger.info(f"Browser heartbeat stale ({HEARTBEAT_FAIL_COUNT}/{HEARTBEAT_FAIL_THRESHOLD})")
                 
-                if HEALTH_CHECK_FAIL_COUNT >= HEALTH_CHECK_FAIL_THRESHOLD:
+                if HEARTBEAT_FAIL_COUNT >= HEARTBEAT_FAIL_THRESHOLD:
                     logger.info("Browser heartbeat lost - initiating graceful shutdown")
                     graceful_shutdown()
                     break
