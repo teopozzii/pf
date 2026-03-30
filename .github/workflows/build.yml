@@ -3,10 +3,10 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*' # Triggers only when pushing a tag like v1.0, v0.1
+      - 'v*'
 
 permissions:
-  contents: write # Required to create releases
+  contents: write
 
 jobs:
   build:
@@ -19,8 +19,7 @@ jobs:
             artifact_name: BankStatementApp.exe
             asset_name: BankStatementApp-Windows.exe
           - os: macos-latest
-            artifact_name: dist/BankStatementApp
-            asset_name: BankStatementApp-MacOS
+            asset_name: BankStatementApp-MacOS.zip
 
     steps:
       - uses: actions/checkout@v3
@@ -34,27 +33,23 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build with PyInstaller
-        # Windows command
+      - name: Build with PyInstaller (Windows)
         if: matrix.os == 'windows-latest'
         run: |
           pyinstaller launcher.py --onefile --windowed --name BankStatementApp --add-data "assets;assets" --add-data "pages;pages" --add-data "utils;utils" --hidden-import dash_pages --hidden-import dash_bootstrap_components --hidden-import plotly.io._renderers
 
-      - name: Build with PyInstaller
-        # MacOS command (separator is ':' instead of ';')
+      - name: Build with PyInstaller (MacOS)
         if: matrix.os == 'macos-latest'
         run: |
-          pyinstaller launcher.py --onefile --windowed --name BankStatementApp --add-data "assets:assets" --add-data "pages:pages" --add-data "utils:utils" --hidden-import dash_pages --hidden-import dash_bootstrap_components --hidden-import plotly.io._renderers
+          pyinstaller launcher.py --windowed --name BankStatementApp --add-data "assets:assets" --add-data "pages:pages" --add-data "utils:utils" --hidden-import dash_pages --hidden-import dash_bootstrap_components --hidden-import plotly.io._renderers
 
-      - name: Rename Artifact (for clear Release filenames)
-        # Windows: Move form dist/BankStatementApp.exe to proper name
+      - name: Rename Artifact (Windows)
         if: matrix.os == 'windows-latest'
-        run: move dist/BankStatementApp.exe ${{ matrix.asset_name }}
+        run: move dist/BankStatementApp.exe BankStatementApp-Windows.exe
 
-      - name: Rename Artifact (MacOS)
-        # MacOS: Move binary (no extension) to proper name
+      - name: Package Artifact (MacOS)
         if: matrix.os == 'macos-latest'
-        run: mv dist/BankStatementApp ${{ matrix.asset_name }}
+        run: ditto -c -k --sequesterRsrc --keepParent dist/BankStatementApp.app BankStatementApp-MacOS.zip
 
       - name: Release
         uses: softprops/action-gh-release@v1
