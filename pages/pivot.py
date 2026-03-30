@@ -15,7 +15,7 @@ from utils.config import home_page_placeholders, CONFIG
 
 logger = logging.getLogger(__name__)
 
-register_page(__name__, path="/pivot", name="Pivot")
+register_page(__name__, path="/pivot", name="Sommario")
 
 
 # ============================================================================
@@ -149,7 +149,10 @@ def insert_subtotal_rows(
 layout = html.Div([
     *home_page_placeholders,
     
-    html.H1("Pivot"),
+    html.H1(
+        "Sommario spese",
+        style={'marginTop': '15px'}
+    ),
     
     html.Div(
         "Visualizza tutte le tue spese categorizzate con subtotali mensili. "
@@ -272,7 +275,7 @@ layout = html.Div([
             },
             style_cell_conditional=[
                 {'if': {'column_id': 'Data'}, 'width': '100px'},
-                {'if': {'column_id': 'Importo'}, 'width': '140px'},
+                {'if': {'column_id': 'Importo'}, 'width': '140px', 'textAlign': 'right'},
             ],
             style_header={'backgroundColor': '#f9f9f9', 'fontWeight': 'bold'},
             style_data_conditional=[],

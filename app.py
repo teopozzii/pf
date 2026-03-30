@@ -15,8 +15,13 @@ sidebar = html.Div([
         id='user-dropdown',
         options=(users := list(CONFIG.keys())),
         value=users[0],
+        style={
+            "marginTop": "-15px",
+            "marginBottom": "10px"
+            }
     ),
-    html.H2("Analisi spese", className="display-8"),
+    html.H2("Analisi spese", className="display-8",
+    style={"marginLeft": "10px"}),
     html.Hr(),
     html.P("Seleziona la visualizzazione desiderata."),
     dbc.Nav(

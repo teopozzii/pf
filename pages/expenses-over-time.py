@@ -17,7 +17,7 @@ layout = html.Div([
         multi=True
     ),
     dcc.Graph(id='statement-graph')
-])
+], style={'marginTop': '20px'})
 
 @callback(
     Output('category-dropdown', "options"),

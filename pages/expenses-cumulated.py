@@ -17,7 +17,7 @@ layout = html.Div([
         multi=True
     ),
     dcc.Graph(id='statement-graph-csum')
-])
+], style={'marginTop': '20px'})
 
 @callback(
     Output('category-dropdown-csum', "options"),
