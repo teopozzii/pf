@@ -16,3 +16,8 @@ data
 *.xlsx
 *.pdf
 *.csv
+
+# dist
+build
+dist
+*.spec*
