@@ -82,7 +82,9 @@ conto/
 ├── pages/                      # Multi-page app pages
 │   ├── home.py                # File upload & preview
 │   ├── expenses-over-time.py  # Category histogram
-│   └── expenses-cumulated.py  # Cumulative spending chart
+│   ├── expenses-cumulated.py  # Cumulative spending chart
+│   ├── pivot.py               # Monthly expense summary with category filters
+│   └── categorize-uncategorized.py # Manual categorization of unmapped transactions
 ├── utils/                      # Shared utilities
 │   ├── bankstatement.py       # Bank statement processing
 │   ├── config.py              # Configuration & UI components
@@ -101,7 +103,10 @@ conto/
 │   ├── DATA_FLOW.md           # Data processing pipeline
 │   ├── UTILS.md               # Utility module reference
 │   ├── PAGES.md               # Page & callback documentation
-│   └── BUILD_AND_DEPLOYMENT.md # PyInstaller & CI/CD setup
+│   ├── BUILD_AND_DEPLOYMENT.md # PyInstaller & CI/CD setup
+│   ├── ICON_GUIDE.md          # App icon integration & updates
+│   ├── GRACEFUL_SHUTDOWN_ARCHITECTURE.md # Signal handling design
+│   └── EVOLUTION_GRACEFUL_SHUTDOWN.md # Shutdown implementation history
 └── README.md                   # This file
 ```
 
@@ -113,6 +118,9 @@ Comprehensive documentation is available in the `docs/` directory:
 |----------|---------|
 | [**ARCHITECTURE.md**](docs/ARCHITECTURE.md) | High-level system design, component interactions, dependency graph, and technology stack |
 | [**DATA_FLOW.md**](docs/DATA_FLOW.md) | Complete data ingestion, processing, persistence, and visualization pipeline with examples |
+| [**ICON_GUIDE.md**](docs/ICON_GUIDE.md) | App icon generation, integration with PyInstaller, and update procedures |
+| [**GRACEFUL_SHUTDOWN_ARCHITECTURE.md**](docs/GRACEFUL_SHUTDOWN_ARCHITECTURE.md) | Signal handling design for clean app shutdown |
+| [**EVOLUTION_GRACEFUL_SHUTDOWN.md**](docs/EVOLUTION_GRACEFUL_SHUTDOWN.md) | Implementation history and evolution of shutdown mechanism |
 | [**UTILS.md**](docs/UTILS.md) | Detailed reference for each utility module (BankStatement, config, paths, graph) |
 | [**PAGES.md**](docs/PAGES.md) | Page layouts, callback signatures, and interaction patterns for all pages |
 | [**BUILD_AND_DEPLOYMENT.md**](docs/BUILD_AND_DEPLOYMENT.md) | PyInstaller configuration, GitHub Actions CI/CD, and release instructions |
