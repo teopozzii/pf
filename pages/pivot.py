@@ -39,6 +39,7 @@ def insert_subtotal_rows(
 ) -> List[Dict[str, Any]]:
     """
     Insert subtotal rows at month boundaries in a sorted DataFrame.
+    Subtotals appear BEFORE transactions for each month (top of month).
     
     Args:
         df: Sorted DataFrame with transactions (newest first)
@@ -78,6 +79,7 @@ def insert_subtotal_rows(
     current_month = None
     month_amount = 0.0
     month_count = 0
+    current_month_txns = []  # Buffer for transactions of current month
     
     for idx, row in df_sorted.iterrows():
         transaction_date = row[date_col]
@@ -91,7 +93,7 @@ def insert_subtotal_rows(
         
         # Check if we've entered a new month
         if current_month is not None and transaction_month != current_month:
-            # Insert subtotal row for the previous month
+            # Emit subtotal FIRST, then all transactions for the previous month
             result.append({
                 'row_type': 'subtotal',
                 'Data': f'Month {current_month}',
@@ -99,20 +101,26 @@ def insert_subtotal_rows(
                 'Dettaglio': f'({month_count} transazioni)',
                 'Importo': month_amount,
             })
+            # Append all buffered transactions for this month
+            for txn in current_month_txns:
+                result.append(txn)
+            
+            current_month_txns = []
             month_amount = 0.0
             month_count = 0
         
         current_month = transaction_month
         
-        # Add transaction row
+        # Build transaction row and add to buffer
         date_str = pd.Timestamp(transaction_date).strftime('%Y-%m-%d')
-        result.append({
+        txn_row = {
             'row_type': 'transaction',
             'Data': date_str,
             'Descrizione': row.get(config['headers'].get('descript', 'Descrizione'), ''),
             'Dettaglio': row.get(config['headers'].get('detail', 'Dettaglio'), ''),
             'Importo': amount,
-        })
+        }
+        current_month_txns.append(txn_row)
         
         # Accumulate
         month_amount += amount
@@ -120,7 +128,7 @@ def insert_subtotal_rows(
         total_amount += amount
         total_count += 1
     
-    # Add final month subtotal
+    # Process final month: emit subtotal first, then all transactions
     if current_month is not None:
         result.append({
             'row_type': 'subtotal',
@@ -129,6 +137,8 @@ def insert_subtotal_rows(
             'Dettaglio': f'({month_count} transazioni)',
             'Importo': month_amount,
         })
+        for txn in current_month_txns:
+            result.append(txn)
     
     # Update total row with actual values
     result[total_placeholder_idx] = {
